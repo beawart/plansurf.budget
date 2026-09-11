@@ -259,9 +259,17 @@ function App(){
 
   const syncData={version:1,app:'plansurf-budget',transactions,goals,updatedAt:new Date().toISOString()};
   const githubUrl=config=>`https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${config.path.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(config.branch)}`;
+  const githubRepoUrl=config=>`https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}`;
   const githubHeaders=()=>({'Accept':'application/vnd.github+json','Authorization':`Bearer ${githubToken}`,'X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'});
   const validSync=config=>config.owner&&config.repo&&config.path&&config.branch&&githubToken;
   const saveSyncConfig=config=>{setSyncConfig(config);save(GITHUB_CONFIG,config);};
+  const explainNotFound=async(config)=>{
+    const repoResponse=await fetch(githubRepoUrl(config),{headers:githubHeaders()});
+    if(repoResponse.ok)return`Budget file not found at ${config.path} on branch ${config.branch}. Save local data once to create it.`;
+    if(repoResponse.status===401)return'Token is invalid or expired.';
+    if(repoResponse.status===403)return'Token lacks permission to view this repository.';
+    return`Repository ${config.owner}/${config.repo} is not visible to this token. Check the owner, repository name, and token repository access.`;
+  };
   const applySyncData=d=>{
     if(!d||d.app!=='plansurf-budget'||typeof d.transactions!=='object'||!Array.isArray(d.goals))throw new Error('The JSON file is not a valid PlanSurf budget backup.');
     suppressDirty.current=true;setTransactions(d.transactions);setGoals(d.goals);
@@ -272,7 +280,7 @@ function App(){
     setSyncing(true);setSyncStatus('Pulling budget from GitHub...');
     try{
       const response=await fetch(githubUrl(config),{headers:githubHeaders()});
-      if(response.status===404)throw new Error('404');
+      if(response.status===404){setSyncStatus('Pull failed: checking repository access...');setSyncStatus('Pull failed: '+await explainNotFound(config));return;}
       if(!response.ok)throw new Error(`${response.status} ${await response.text()}`);
       applySyncData(JSON.parse(b64decode((await response.json()).content)));
       setDirty(false);setSyncStatus('Budget synced from GitHub');
@@ -284,7 +292,11 @@ function App(){
     setSyncing(true);setSyncStatus('Saving budget to GitHub...');
     try{
       const url=githubUrl(config);let sha=null;const existing=await fetch(url,{headers:githubHeaders()});
-      if(existing.ok)sha=(await existing.json()).sha;else if(existing.status!==404)throw new Error(`${existing.status} ${await existing.text()}`);
+      if(existing.ok)sha=(await existing.json()).sha;
+      else if(existing.status===404){
+        const repoResponse=await fetch(githubRepoUrl(config),{headers:githubHeaders()});
+        if(!repoResponse.ok)throw new Error(`${repoResponse.status} ${await repoResponse.text()}`);
+      }else throw new Error(`${existing.status} ${await existing.text()}`);
       const body={message:'Update PlanSurf budget data',content:b64encode(JSON.stringify(syncData,null,2)),branch:config.branch};
       if(sha)body.sha=sha;
       const response=await fetch(url.replace(/\?ref=.*$/,''),{method:'PUT',headers:githubHeaders(),body:JSON.stringify(body)});
