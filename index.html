@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Budget Planner</title>
+<style>
+:root{--bg:#f7f7f4;--surface:#fff;--surface-alt:#f0efeb;--border:#e0ddd5;--text:#1a1a18;--text-sec:#6b6960;--text-dim:#9e9b90;--accent:#2563eb;--accent-light:#eff6ff;--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--amber:#d97706;--amber-bg:#fffbeb;--purple:#9333ea;--purple-bg:#faf5ff;--radius:10px;--radius-lg:14px;--shadow:0 1px 3px rgba(0,0,0,.06);--shadow-lg:0 8px 24px rgba(0,0,0,.08);}
+[data-theme="dark"]{--bg:#0f0f0e;--surface:#1a1a18;--surface-alt:#222220;--border:#333330;--text:#ececea;--text-sec:#a0a098;--text-dim:#686860;--accent-light:#0c1f3f;--green-bg:#052e16;--red-bg:#2a0f0f;--amber-bg:#2a210a;--purple-bg:#2e0a4a;--shadow:0 1px 3px rgba(0,0,0,.3);--shadow-lg:0 8px 24px rgba(0,0,0,.4);}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;}
+button{cursor:pointer;font-family:inherit;}input,textarea,select{font-family:inherit;font-size:inherit;}
+
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.hdr h1{font-size:17px;font-weight:700;}
+.hdr-r{display:flex;gap:6px;align-items:center;}
+.ibtn{width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text-sec);font-size:15px;transition:.15s;}
+.ibtn:hover{background:var(--surface-alt);}
+.ibtn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+.layout{max-width:1100px;margin:0 auto;padding:20px 24px;}
+
+/* Month nav */
+.month-nav{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.month-nav h2{font-size:20px;font-weight:700;min-width:180px;text-align:center;}
+.mnav{background:none;border:1px solid var(--border);color:var(--text-sec);font-size:16px;padding:6px 12px;border-radius:8px;}
+.mnav:hover{background:var(--surface-alt);}
+
+/* Stats cards */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px;}
+.scard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;position:relative;overflow:hidden;}
+.scard .label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);}
+.scard .val{font-size:26px;font-weight:700;margin-top:4px;}
+.scard .sub{font-size:11px;color:var(--text-sec);margin-top:2px;}
+.scard .icon{position:absolute;top:14px;right:14px;font-size:24px;opacity:.3;}
+
+/* Savings goals */
+.goals-sec{margin-bottom:24px;}
+.goals-sec h3{font-size:14px;font-weight:700;margin-bottom:10px;}
+.goals-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
+.goal-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;position:relative;}
+.goal-card .gname{font-size:13px;font-weight:600;}
+.goal-card .gprog{margin-top:8px;}
+.gbar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;}
+.gfill{height:100%;border-radius:4px;transition:width .4s;}
+.ginfo{display:flex;justify-content:space-between;font-size:11px;color:var(--text-sec);margin-top:4px;}
+.goal-acts{position:absolute;top:10px;right:10px;display:flex;gap:2px;opacity:0;transition:.15s;}
+.goal-card:hover .goal-acts{opacity:1;}
+.abtn{background:none;border:none;color:var(--text-dim);font-size:13px;padding:3px 5px;border-radius:4px;}
+.abtn:hover{background:var(--surface-alt);color:var(--text);}
+.abtn.del:hover{color:var(--red);}
+
+/* Bar chart */
+.chart-sec{margin-bottom:24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;}
+.chart-sec h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);margin-bottom:14px;}
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:140px;padding-bottom:20px;position:relative;border-bottom:1px solid var(--border);}
+.bar-group{flex:1;display:flex;gap:3px;align-items:flex-end;justify-content:center;position:relative;}
+.bar{border-radius:4px 4px 0 0;min-width:16px;max-width:32px;flex:1;transition:height .4s;cursor:default;}
+.bar:hover{opacity:.8;}
+.bar-label{position:absolute;bottom:-18px;font-size:9px;color:var(--text-dim);text-align:center;width:100%;}
+.chart-legend{display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--text-sec);}
+.chart-legend span::before{content:'';display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle;}
+.legend-income::before{background:var(--green)!important;}
+.legend-expense::before{background:var(--red)!important;}
+
+/* Category breakdown */
+.cat-sec{margin-bottom:24px;}
+.cat-sec h3{font-size:14px;font-weight:700;margin-bottom:10px;}
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;}
+.cat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;display:flex;align-items:center;gap:10px;}
+.cat-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.cat-info{flex:1;min-width:0;}
+.cat-name{font-size:12px;font-weight:600;}
+.cat-amt{font-size:14px;font-weight:700;}
+.cat-pct{font-size:10px;color:var(--text-dim);}
+.cat-bar{height:4px;background:var(--border);border-radius:2px;margin-top:4px;overflow:hidden;}
+.cat-fill{height:100%;border-radius:2px;}
+
+/* Transactions */
+.tx-sec{margin-bottom:24px;}
+.tx-sec h3{font-size:14px;font-weight:700;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+.tx-table{width:100%;border-collapse:separate;border-spacing:0;}
+.tx-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);}
+.tx-table td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+.tx-table tr{background:var(--surface);transition:.12s;}
+.tx-table tr:hover{background:var(--surface-alt);}
+.tx-type{font-weight:700;}
+.tx-type.income{color:var(--green);}
+.tx-type.expense{color:var(--red);}
+.tx-cat-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;}
+.tx-acts{display:flex;gap:2px;opacity:0;transition:.15s;}
+tr:hover .tx-acts{opacity:1;}
+
+/* Add form */
+.add-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.add-row input,.add-row select{padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px;outline:none;}
+.add-row input:focus{border-color:var(--accent);}
+.add-row input[type="text"]{flex:1;min-width:140px;}
+.add-row input[type="number"]{width:110px;}
+.btn{padding:9px 16px;border:none;border-radius:var(--radius);font-size:13px;font-weight:600;transition:.15s;}
+.btn-p{background:var(--accent);color:#fff;}.btn-p:hover{opacity:.9;}
+.btn-g{background:none;color:var(--text-sec);border:1px solid var(--border);}.btn-g:hover{background:var(--surface-alt);}
+
+/* Modal */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:200;animation:fi .15s;}
+.modal{background:var(--surface);border-radius:var(--radius-lg);padding:22px;width:420px;max-width:92vw;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-lg);animation:su .2s;}
+.modal h3{font-size:16px;font-weight:700;margin-bottom:16px;}
+.fg{margin-bottom:12px;}
+.fg label{display:block;font-size:11px;font-weight:600;color:var(--text-sec);margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px;}
+.fg input,.fg select{width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface-alt);color:var(--text);font-size:13px;outline:none;}
+.fg input:focus{border-color:var(--accent);}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.macts{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}
+
+.io{display:flex;gap:6px;margin-top:16px;}
+.io button{padding:7px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text-sec);cursor:pointer;}
+.io button:hover{background:var(--surface-alt);}
+
+@keyframes fi{from{opacity:0}to{opacity:1}}
+@keyframes su{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel">
+const {useState,useEffect,useMemo}=React;
+const S='budget-planner-v1';
+const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d;}catch{return d;}};
+const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+const uid=()=>Math.random().toString(36).substr(2,9)+Date.now().toString(36);
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const mk=(y,m)=>`${y}-${String(m+1).padStart(2,'0')}`;
+const fmt=n=>n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+
+const CATEGORIES=[
+  {id:'salary',label:'Salary',icon:'💰',color:'#16a34a',type:'income'},
+  {id:'freelance',label:'Freelance',icon:'💻',color:'#2563eb',type:'income'},
+  {id:'investment',label:'Investment',icon:'📈',color:'#9333ea',type:'income'},
+  {id:'other-income',label:'Other Income',icon:'🎁',color:'#0891b2',type:'income'},
+  {id:'rent',label:'Rent / Mortgage',icon:'🏠',color:'#dc2626',type:'expense'},
+  {id:'groceries',label:'Groceries',icon:'🛒',color:'#ea580c',type:'expense'},
+  {id:'transport',label:'Transport',icon:'🚗',color:'#d97706',type:'expense'},
+  {id:'utilities',label:'Utilities',icon:'⚡',color:'#0d9488',type:'expense'},
+  {id:'entertainment',label:'Entertainment',icon:'🎬',color:'#e11d48',type:'expense'},
+  {id:'dining',label:'Dining Out',icon:'🍽️',color:'#be185d',type:'expense'},
+  {id:'health',label:'Health',icon:'🏥',color:'#16a34a',type:'expense'},
+  {id:'shopping',label:'Shopping',icon:'🛍️',color:'#7c3aed',type:'expense'},
+  {id:'education',label:'Education',icon:'📚',color:'#2563eb',type:'expense'},
+  {id:'insurance',label:'Insurance',icon:'🛡️',color:'#4f46e5',type:'expense'},
+  {id:'subscriptions',label:'Subscriptions',icon:'📱',color:'#6366f1',type:'expense'},
+  {id:'other-expense',label:'Other',icon:'📦',color:'#64748b',type:'expense'},
+];
+const CAT_MAP={};CATEGORIES.forEach(c=>CAT_MAP[c.id]=c);
+
+function App(){
+  const now=new Date();
+  const [transactions,setTransactions]=useState(()=>load(S+'-tx',{}));
+  const [goals,setGoals]=useState(()=>load(S+'-goals',[]));
+  const [curMonth,setCurMonth]=useState(now.getMonth());
+  const [curYear,setCurYear]=useState(now.getFullYear());
+  const [dark,setDark]=useState(()=>localStorage.getItem('bp-dark')==='1');
+  const [goalModal,setGoalModal]=useState(false);
+  const [desc,setDesc]=useState('');
+  const [amt,setAmt]=useState('');
+  const [cat,setCat]=useState('salary');
+  const [txDate,setTxDate]=useState(now.toISOString().split('T')[0]);
+
+  useEffect(()=>{save(S+'-tx',transactions);},[transactions]);
+  useEffect(()=>{save(S+'-goals',goals);},[goals]);
+  useEffect(()=>{document.documentElement.setAttribute('data-theme',dark?'dark':'light');localStorage.setItem('bp-dark',dark?'1':'0');},[dark]);
+
+  const key=mk(curYear,curMonth);
+  const monthTx=(transactions[key]||[]).sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+  // Add transaction
+  const addTx=(e)=>{
+    e.preventDefault();
+    if(!desc.trim()||!amt)return;
+    const catInfo=CAT_MAP[cat];
+    const tx={id:uid(),desc:desc.trim(),amount:parseFloat(amt),category:cat,type:catInfo?.type||'expense',date:txDate};
+    const txKey=mk(new Date(txDate).getFullYear(),new Date(txDate).getMonth());
+    setTransactions(p=>({...p,[txKey]:[...(p[txKey]||[]),tx]}));
+    setDesc('');setAmt('');
+  };
+  const deleteTx=(id)=>{setTransactions(p=>({...p,[key]:monthTx.filter(t=>t.id!==id)}));};
+
+  // Stats
+  const income=monthTx.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const expenses=monthTx.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const balance=income-expenses;
+  const savingsRate=income>0?Math.round((balance/income)*100):0;
+
+  // Category breakdown
+  const catBreakdown=useMemo(()=>{
+    const map={};
+    monthTx.filter(t=>t.type==='expense').forEach(t=>{
+      map[t.category]=(map[t.category]||0)+t.amount;
+    });
+    return CATEGORIES.filter(c=>c.type==='expense'&&map[c.id]).map(c=>({...c,amount:map[c.id],pct:expenses>0?Math.round(map[c.id]/expenses*100):0})).sort((a,b)=>b.amount-a.amount);
+  },[monthTx,expenses]);
+
+  // Bar chart — last 6 months
+  const chartData=useMemo(()=>{
+    const data=[];
+    for(let i=5;i>=0;i--){
+      let m=curMonth-i,y=curYear;
+      while(m<0){m+=12;y--;}
+      const k2=mk(y,m);
+      const txs=transactions[k2]||[];
+      const inc=txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+      const exp=txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+      data.push({label:MONTHS[m].substr(0,3),income:inc,expense:exp});
+    }
+    return data;
+  },[transactions,curMonth,curYear]);
+  const chartMax=Math.max(...chartData.flatMap(d=>[d.income,d.expense]),1);
+
+  // Goals
+  const addGoal=(g)=>{setGoals(p=>[...p,{...g,id:uid(),saved:0}]);};
+  const updateGoalSaved=(id,v)=>{setGoals(p=>p.map(g=>g.id===id?{...g,saved:Math.max(0,g.saved+v)}:g));};
+  const deleteGoal=(id)=>{setGoals(p=>p.filter(g=>g.id!==id));};
+
+  const prevMonth=()=>{if(curMonth===0){setCurMonth(11);setCurYear(curYear-1);}else setCurMonth(curMonth-1);};
+  const nextMonth=()=>{if(curMonth===11){setCurMonth(0);setCurYear(curYear+1);}else setCurMonth(curMonth+1);};
+
+  const exportAll=()=>{const d={transactions,goals};const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='budget-backup.json';a.click();URL.revokeObjectURL(u);};
+  const importAll=()=>{const i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.transactions)setTransactions(d.transactions);if(d.goals)setGoals(d.goals);}catch{alert('Invalid file');}};r.readAsText(f);};i.click();};
+
+  return(
+    <div>
+      <div className="hdr">
+        <h1>💵 Budget Planner</h1>
+        <div className="hdr-r">
+          <button className={`ibtn ${dark?'on':''}`} onClick={()=>setDark(!dark)}>{dark?'☀':'☾'}</button>
+        </div>
+      </div>
+      <div className="layout">
+        {/* Month nav */}
+        <div className="month-nav">
+          <button className="mnav" onClick={prevMonth}>‹</button>
+          <h2>{MONTHS[curMonth]} {curYear}</h2>
+          <button className="mnav" onClick={nextMonth}>›</button>
+        </div>
+
+        {/* Stats */}
+        <div className="stats">
+          <div className="scard"><span className="icon">📥</span><div className="label">Income</div><div className="val" style={{color:'var(--green)'}}>$ {fmt(income)}</div></div>
+          <div className="scard"><span className="icon">📤</span><div className="label">Expenses</div><div className="val" style={{color:'var(--red)'}}>$ {fmt(expenses)}</div></div>
+          <div className="scard"><span className="icon">💰</span><div className="label">Balance</div><div className="val" style={{color:balance>=0?'var(--green)':'var(--red)'}}>$ {fmt(balance)}</div><div className="sub">{balance>=0?'Under budget ✓':'Over budget ⚠'}</div></div>
+          <div className="scard"><span className="icon">📊</span><div className="label">Savings Rate</div><div className="val" style={{color:'var(--accent)'}}>{savingsRate}%</div></div>
+        </div>
+
+        {/* Bar chart */}
+        <div className="chart-sec">
+          <h3>6-Month Comparison</h3>
+          <div className="bar-chart">
+            {chartData.map((d,i)=>(
+              <div className="bar-group" key={i}>
+                <div className="bar" style={{height:`${(d.income/chartMax)*100}%`,background:'var(--green)',minHeight:d.income?4:0}} title={`Income: $${fmt(d.income)}`}></div>
+                <div className="bar" style={{height:`${(d.expense/chartMax)*100}%`,background:'var(--red)',minHeight:d.expense?4:0}} title={`Expenses: $${fmt(d.expense)}`}></div>
+                <span className="bar-label">{d.label}</span>
+              </div>
+            ))}
+          </div>
+          <div className="chart-legend">
+            <span className="legend-income">Income</span>
+            <span className="legend-expense">Expenses</span>
+          </div>
+        </div>
+
+        {/* Savings goals */}
+        <div className="goals-sec">
+          <h3 style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            🎯 Savings Goals
+            <button className="btn btn-g" style={{fontSize:12,padding:'5px 12px'}} onClick={()=>setGoalModal(true)}>+ Add Goal</button>
+          </h3>
+          {goals.length>0&&(
+            <div className="goals-grid" style={{marginTop:10}}>
+              {goals.map(g=>{
+                const pct=g.target>0?Math.min(100,Math.round(g.saved/g.target*100)):0;
+                return(
+                  <div className="goal-card" key={g.id}>
+                    <div className="gname">{g.icon||'🎯'} {g.name}</div>
+                    <div className="gprog">
+                      <div className="gbar"><div className="gfill" style={{width:`${pct}%`,background:pct>=100?'var(--green)':'var(--accent)'}}></div></div>
+                      <div className="ginfo"><span>${fmt(g.saved)} / ${fmt(g.target)}</span><span>{pct}%</span></div>
+                    </div>
+                    <div style={{display:'flex',gap:4,marginTop:6}}>
+                      <button className="btn btn-g" style={{fontSize:10,padding:'3px 8px',flex:1}} onClick={()=>updateGoalSaved(g.id,50)}>+ $50</button>
+                      <button className="btn btn-g" style={{fontSize:10,padding:'3px 8px',flex:1}} onClick={()=>updateGoalSaved(g.id,100)}>+ $100</button>
+                      <button className="btn btn-g" style={{fontSize:10,padding:'3px 8px',flex:1}} onClick={()=>updateGoalSaved(g.id,500)}>+ $500</button>
+                    </div>
+                    <div className="goal-acts">
+                      <button className="abtn del" onClick={()=>deleteGoal(g.id)}>✕</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Category breakdown */}
+        {catBreakdown.length>0&&(
+          <div className="cat-sec">
+            <h3>📂 Expense Breakdown</h3>
+            <div className="cat-grid">
+              {catBreakdown.map(c=>(
+                <div className="cat-card" key={c.id}>
+                  <div className="cat-icon" style={{background:c.color+'20'}}>{c.icon}</div>
+                  <div className="cat-info">
+                    <div className="cat-name">{c.label}</div>
+                    <div className="cat-amt" style={{color:c.color}}>$ {fmt(c.amount)}</div>
+                    <div className="cat-bar"><div className="cat-fill" style={{width:`${c.pct}%`,background:c.color}}></div></div>
+                  </div>
+                  <div className="cat-pct">{c.pct}%</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Add transaction */}
+        <div className="tx-sec">
+          <h3>💳 Transactions</h3>
+          <form className="add-row" onSubmit={addTx}>
+            <input type="text" value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Description" />
+            <input type="number" value={amt} onChange={e=>setAmt(e.target.value)} placeholder="Amount" step="0.01" min="0" />
+            <select value={cat} onChange={e=>setCat(e.target.value)}>
+              <optgroup label="Income">{CATEGORIES.filter(c=>c.type==='income').map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}</optgroup>
+              <optgroup label="Expense">{CATEGORIES.filter(c=>c.type==='expense').map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}</optgroup>
+            </select>
+            <input type="date" value={txDate} onChange={e=>setTxDate(e.target.value)} />
+            <button type="submit" className="btn btn-p">+ Add</button>
+          </form>
+
+          {monthTx.length===0?(
+            <div style={{textAlign:'center',padding:'30px',color:'var(--text-dim)',fontSize:13}}>No transactions this month.</div>
+          ):(
+            <div style={{overflowX:'auto'}}>
+              <table className="tx-table">
+                <thead><tr><th>Date</th><th>Description</th><th>Category</th><th style={{textAlign:'right'}}>Amount</th><th></th></tr></thead>
+                <tbody>
+                  {monthTx.map(tx=>{
+                    const ci=CAT_MAP[tx.category];
+                    return(
+                      <tr key={tx.id}>
+                        <td style={{fontSize:12,color:'var(--text-dim)',whiteSpace:'nowrap'}}>{tx.date}</td>
+                        <td>{tx.desc}</td>
+                        <td><span className="tx-cat-badge" style={{background:(ci?.color||'#666')+'20',color:ci?.color||'var(--text-sec)'}}>{ci?.icon} {ci?.label||tx.category}</span></td>
+                        <td style={{textAlign:'right'}}><span className={`tx-type ${tx.type}`}>{tx.type==='income'?'+':'-'} ${fmt(tx.amount)}</span></td>
+                        <td><div className="tx-acts"><button className="abtn del" onClick={()=>deleteTx(tx.id)}>✕</button></div></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="io">
+          <button onClick={exportAll}>↓ Export</button>
+          <button onClick={importAll}>↑ Import</button>
+        </div>
+      </div>
+
+      {/* Goal modal */}
+      {goalModal&&<GoalModal onClose={()=>setGoalModal(false)} onSave={g=>{addGoal(g);setGoalModal(false);}} />}
+    </div>
+  );
+}
+
+function GoalModal({onClose,onSave}){
+  const [name,setName]=useState('');
+  const [target,setTarget]=useState('');
+  const [icon,setIcon]=useState('🎯');
+  return(
+    <div className="modal-ov" onClick={onClose}>
+      <div className="modal" onClick={e=>e.stopPropagation()}>
+        <h3>New Savings Goal</h3>
+        <div className="fg"><label>Goal Name</label><input value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Emergency Fund, Vacation" autoFocus /></div>
+        <div className="fg-row">
+          <div className="fg"><label>Target Amount ($)</label><input type="number" value={target} onChange={e=>setTarget(e.target.value)} placeholder="5000" min="0" /></div>
+          <div className="fg"><label>Icon</label><select value={icon} onChange={e=>setIcon(e.target.value)}>
+            {['🎯','🏠','✈️','🚗','💻','🎓','💍','🏖️','🎸','🐶'].map(i=><option key={i} value={i}>{i}</option>)}
+          </select></div>
+        </div>
+        <div className="macts">
+          <button className="btn btn-g" onClick={onClose}>Cancel</button>
+          <button className="btn btn-p" onClick={()=>{if(!name.trim()||!target)return;onSave({name:name.trim(),target:parseFloat(target),icon});}}>Add Goal</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<App />);
+</script>
+</body>
+</html>
