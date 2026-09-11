@@ -139,7 +139,7 @@ const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d;}catch{retu
 const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const uid=()=>Math.random().toString(36).substr(2,9)+Date.now().toString(36);
 const GITHUB_CONFIG='budget-planner-github-v1';
-const SYNC_BUILD='budget-sync-2026-09-11-4';
+const SYNC_BUILD='budget-sync-2026-09-11-5';
 const DEFAULT_SYNC_CONFIG={owner:'beawart',repo:'plansurf-data',path:'plansurf.budget-data.json',branch:'main'};
 const getSyncConfig=()=>{const saved=load(GITHUB_CONFIG,{});return{owner:saved.owner||DEFAULT_SYNC_CONFIG.owner,repo:saved.repo||DEFAULT_SYNC_CONFIG.repo,path:saved.path||DEFAULT_SYNC_CONFIG.path,branch:saved.branch||DEFAULT_SYNC_CONFIG.branch};};
 const b64encode=s=>{const bytes=new TextEncoder().encode(s);let bin='';bytes.forEach(b=>bin+=String.fromCharCode(b));return btoa(bin);};
@@ -262,7 +262,6 @@ function App(){
   const githubContentsUrl=config=>`https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${config.path.split('/').map(encodeURIComponent).join('/')}`;
   const githubUrl=config=>`${githubContentsUrl(config)}?ref=${encodeURIComponent(config.branch)}`;
   const githubRepoUrl=config=>`https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}`;
-  const githubRawUrl=config=>`https://raw.githubusercontent.com/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/${encodeURIComponent(config.branch)}/${config.path.split('/').map(encodeURIComponent).join('/')}`;
   const githubHeaders=()=>({'Accept':'application/vnd.github+json','Authorization':`Bearer ${githubToken}`,'X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json','Cache-Control':'no-cache'});
   const validSync=config=>config.owner&&config.repo&&config.path&&config.branch&&githubToken;
   const saveSyncConfig=config=>{setSyncConfig(config);save(GITHUB_CONFIG,config);};
@@ -294,9 +293,7 @@ function App(){
       if(response.ok){
         applySyncData(JSON.parse(b64decode((await response.json()).content)));
       }else if(response.status===404){
-        const rawResponse=await fetch(githubRawUrl(config),{headers:githubHeaders(),cache:'no-store'});
-        if(!rawResponse.ok){setSyncStatus(`Pull failed: file read returned ${response.status}; ${await explainNotFound(config)} · ${SYNC_BUILD}`);return;}
-        applySyncData(JSON.parse(await rawResponse.text()));
+        setSyncStatus(`Pull failed: file read returned 404; ${await explainNotFound(config)} · ${SYNC_BUILD}`);return;
       }else throw new Error(`${response.status} ${await response.text()}`);
       setDirty(false);setSyncStatus('Budget synced from GitHub');
     }catch(error){setSyncStatus('Pull failed: '+githubError(error.message));}
