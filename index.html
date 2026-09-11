@@ -5,30 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Budget Planner</title>
 <style>
-:root{--bg:#f7f7f4;--surface:#fff;--surface-alt:#f0efeb;--border:#e0ddd5;--text:#1a1a18;--text-sec:#6b6960;--text-dim:#9e9b90;--accent:#2563eb;--accent-light:#eff6ff;--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--amber:#d97706;--amber-bg:#fffbeb;--purple:#9333ea;--purple-bg:#faf5ff;--radius:10px;--radius-lg:14px;--shadow:0 1px 3px rgba(0,0,0,.06);--shadow-lg:0 8px 24px rgba(0,0,0,.08);}
+:root{--bg:#f6f5f2;--surface:#fff;--surface-alt:#f0efeb;--border:#e0ddd5;--text:#1a1a18;--text-sec:#6b6960;--text-dim:#9e9b90;--accent:#1d4ed8;--accent-light:#eff6ff;--green:#16a34a;--green-bg:#f0fdf4;--red:#dc2626;--red-bg:#fef2f2;--amber:#d97706;--amber-bg:#fffbeb;--purple:#7c3aed;--purple-bg:#f5f3ff;--teal:#0d9488;--teal-bg:#f0fdfa;--radius:10px;--radius-lg:14px;--shadow:0 1px 3px rgba(0,0,0,.06);--shadow-lg:0 8px 24px rgba(0,0,0,.08);}
 [data-theme="dark"]{--bg:#0f0f0e;--surface:#1a1a18;--surface-alt:#222220;--border:#333330;--text:#ececea;--text-sec:#a0a098;--text-dim:#686860;--accent-light:#0c1f3f;--green-bg:#052e16;--red-bg:#2a0f0f;--amber-bg:#2a210a;--purple-bg:#2e0a4a;--shadow:0 1px 3px rgba(0,0,0,.3);--shadow-lg:0 8px 24px rgba(0,0,0,.4);}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;}
 button{cursor:pointer;font-family:inherit;}input,textarea,select{font-family:inherit;font-size:inherit;}
 
 .hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
-.hdr h1{font-size:17px;font-weight:700;}
+.hdr h1{font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.hdr .app-tag{font-size:12px;color:var(--accent);background:var(--accent-light);padding:3px 10px;border-radius:12px;font-weight:600;}
 .hdr-r{display:flex;gap:6px;align-items:center;}
+.sync-status{font-size:11px;color:var(--text-sec);max-width:210px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .ibtn{width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text-sec);font-size:15px;transition:.15s;}
 .ibtn:hover{background:var(--surface-alt);}
 .ibtn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
 
-.layout{max-width:1100px;margin:0 auto;padding:20px 24px;}
+.layout{max-width:1200px;margin:0 auto;padding:20px 28px;}
+@media(max-width:700px){.hdr{padding:10px 14px;}.hdr h1{font-size:15px;}.hdr .app-tag{display:none;}.sync-status{display:none;}.layout{padding:14px;}}
 
 /* Month nav */
-.month-nav{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.month-nav{display:flex;align-items:center;gap:8px;margin-bottom:20px;}
 .month-nav h2{font-size:20px;font-weight:700;min-width:180px;text-align:center;}
-.mnav{background:none;border:1px solid var(--border);color:var(--text-sec);font-size:16px;padding:6px 12px;border-radius:8px;}
+.mnav{background:none;border:1px solid var(--border);color:var(--text-sec);font-size:16px;padding:5px 11px;border-radius:6px;}
 .mnav:hover{background:var(--surface-alt);}
 
 /* Stats cards */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px;}
-.scard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;position:relative;overflow:hidden;}
+.scard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;position:relative;overflow:hidden;box-shadow:var(--shadow);}
 .scard .label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);}
 .scard .val{font-size:26px;font-weight:700;margin-top:4px;}
 .scard .sub{font-size:11px;color:var(--text-sec);margin-top:2px;}
@@ -51,7 +54,9 @@ button{cursor:pointer;font-family:inherit;}input,textarea,select{font-family:inh
 .abtn.del:hover{color:var(--red);}
 
 /* Bar chart */
-.chart-sec{margin-bottom:24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;}
+.chart-sec,.goals-sec,.cat-sec,.tx-sec{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;box-shadow:var(--shadow);}
+.chart-sec{margin-bottom:16px;}
+.goals-sec,.cat-sec,.tx-sec{margin-bottom:16px;}
 .chart-sec h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);margin-bottom:14px;}
 .bar-chart{display:flex;align-items:flex-end;gap:6px;height:140px;padding-bottom:20px;position:relative;border-bottom:1px solid var(--border);}
 .bar-group{flex:1;display:flex;gap:3px;align-items:flex-end;justify-content:center;position:relative;}
@@ -64,8 +69,7 @@ button{cursor:pointer;font-family:inherit;}input,textarea,select{font-family:inh
 .legend-expense::before{background:var(--red)!important;}
 
 /* Category breakdown */
-.cat-sec{margin-bottom:24px;}
-.cat-sec h3{font-size:14px;font-weight:700;margin-bottom:10px;}
+.cat-sec h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-dim);margin-bottom:14px;}
 .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;}
 .cat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;display:flex;align-items:center;gap:10px;}
 .cat-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
@@ -77,8 +81,7 @@ button{cursor:pointer;font-family:inherit;}input,textarea,select{font-family:inh
 .cat-fill{height:100%;border-radius:2px;}
 
 /* Transactions */
-.tx-sec{margin-bottom:24px;}
-.tx-sec h3{font-size:14px;font-weight:700;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+.tx-sec h3,.goals-sec h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-dim);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
 .tx-table{width:100%;border-collapse:separate;border-spacing:0;}
 .tx-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);}
 .tx-table td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
@@ -93,7 +96,7 @@ tr:hover .tx-acts{opacity:1;}
 
 /* Add form */
 .add-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
-.add-row input,.add-row select{padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px;outline:none;}
+.add-row input,.add-row select{padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface-alt);color:var(--text);font-size:12px;outline:none;}
 .add-row input:focus{border-color:var(--accent);}
 .add-row input[type="text"]{flex:1;min-width:140px;}
 .add-row input[type="number"]{width:110px;}
@@ -116,6 +119,10 @@ tr:hover .tx-acts{opacity:1;}
 .io button{padding:7px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text-sec);cursor:pointer;}
 .io button:hover{background:var(--surface-alt);}
 
+.sync-note{font-size:12px;color:var(--text-sec);background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:14px;}
+.sync-note strong{color:var(--text);}
+.sync-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}
+
 @keyframes fi{from{opacity:0}to{opacity:1}}
 @keyframes su{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 </style>
@@ -126,11 +133,17 @@ tr:hover .tx-acts{opacity:1;}
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script type="text/babel">
-const {useState,useEffect,useMemo}=React;
+const {useState,useEffect,useMemo,useRef}=React;
 const S='budget-planner-v1';
 const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d;}catch{return d;}};
 const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const uid=()=>Math.random().toString(36).substr(2,9)+Date.now().toString(36);
+const GITHUB_CONFIG='budget-planner-github-v1';
+const DEFAULT_SYNC_CONFIG={owner:'beawart',repo:'plansurf-data',path:'plansurf.budget-data.json',branch:'main'};
+const getSyncConfig=()=>{const saved=load(GITHUB_CONFIG,{});return{owner:saved.owner||DEFAULT_SYNC_CONFIG.owner,repo:saved.repo||DEFAULT_SYNC_CONFIG.repo,path:saved.path||DEFAULT_SYNC_CONFIG.path,branch:saved.branch||DEFAULT_SYNC_CONFIG.branch};};
+const b64encode=s=>{const bytes=new TextEncoder().encode(s);let bin='';bytes.forEach(b=>bin+=String.fromCharCode(b));return btoa(bin);};
+const b64decode=s=>{const bin=atob(s.replace(/\n/g,'')),bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));return new TextDecoder().decode(bytes);};
+const githubError=x=>{if(x.includes('401'))return'Token is invalid or expired.';if(x.includes('403'))return'Token lacks repository access.';if(x.includes('404'))return'Repository or budget file was not found.';if(x.includes('409'))return'The file changed elsewhere. Pull the latest copy first.';return x.slice(0,180);};
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const mk=(y,m)=>`${y}-${String(m+1).padStart(2,'0')}`;
 const fmt=n=>n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -163,6 +176,14 @@ function App(){
   const [curYear,setCurYear]=useState(now.getFullYear());
   const [dark,setDark]=useState(()=>localStorage.getItem('bp-dark')==='1');
   const [goalModal,setGoalModal]=useState(false);
+  const [syncModal,setSyncModal]=useState(false);
+  const [syncConfig,setSyncConfig]=useState(getSyncConfig);
+  const [githubToken,setGithubToken]=useState('');
+  const [syncStatus,setSyncStatus]=useState('Local cache loaded');
+  const [dirty,setDirty]=useState(false);
+  const [syncing,setSyncing]=useState(false);
+  const syncReady=useRef(false);
+  const suppressDirty=useRef(false);
   const [desc,setDesc]=useState('');
   const [amt,setAmt]=useState('');
   const [cat,setCat]=useState('salary');
@@ -170,6 +191,13 @@ function App(){
 
   useEffect(()=>{save(S+'-tx',transactions);},[transactions]);
   useEffect(()=>{save(S+'-goals',goals);},[goals]);
+  useEffect(()=>{
+    if(syncReady.current){
+      if(suppressDirty.current)suppressDirty.current=false;
+      else{setDirty(true);setSyncStatus('Unsaved local changes');}
+    }
+  },[transactions,goals]);
+  useEffect(()=>{syncReady.current=true;},[]);
   useEffect(()=>{document.documentElement.setAttribute('data-theme',dark?'dark':'light');localStorage.setItem('bp-dark',dark?'1':'0');},[dark]);
 
   const key=mk(curYear,curMonth);
@@ -229,11 +257,50 @@ function App(){
   const exportAll=()=>{const d={transactions,goals};const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='budget-backup.json';a.click();URL.revokeObjectURL(u);};
   const importAll=()=>{const i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.transactions)setTransactions(d.transactions);if(d.goals)setGoals(d.goals);}catch{alert('Invalid file');}};r.readAsText(f);};i.click();};
 
+  const syncData={version:1,app:'plansurf-budget',transactions,goals,updatedAt:new Date().toISOString()};
+  const githubUrl=config=>`https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${config.path.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(config.branch)}`;
+  const githubHeaders=()=>({'Accept':'application/vnd.github+json','Authorization':`Bearer ${githubToken}`,'X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'});
+  const validSync=config=>config.owner&&config.repo&&config.path&&config.branch&&githubToken;
+  const saveSyncConfig=config=>{setSyncConfig(config);save(GITHUB_CONFIG,config);};
+  const applySyncData=d=>{
+    if(!d||d.app!=='plansurf-budget'||typeof d.transactions!=='object'||!Array.isArray(d.goals))throw new Error('The JSON file is not a valid PlanSurf budget backup.');
+    suppressDirty.current=true;setTransactions(d.transactions);setGoals(d.goals);
+  };
+  const pullGitHub=async(config=syncConfig)=>{
+    if(!validSync(config)){setSyncStatus('Complete GitHub settings first');return;}
+    if(dirty&&!window.confirm('Pulling will replace unsaved local changes. Continue?'))return;
+    setSyncing(true);setSyncStatus('Pulling budget from GitHub...');
+    try{
+      const response=await fetch(githubUrl(config),{headers:githubHeaders()});
+      if(response.status===404)throw new Error('404');
+      if(!response.ok)throw new Error(`${response.status} ${await response.text()}`);
+      applySyncData(JSON.parse(b64decode((await response.json()).content)));
+      setDirty(false);setSyncStatus('Budget synced from GitHub');
+    }catch(error){setSyncStatus('Pull failed: '+githubError(error.message));}
+    finally{setSyncing(false);}
+  };
+  const pushGitHub=async(config=syncConfig)=>{
+    if(!validSync(config)){setSyncStatus('Complete GitHub settings first');return;}
+    setSyncing(true);setSyncStatus('Saving budget to GitHub...');
+    try{
+      const url=githubUrl(config);let sha=null;const existing=await fetch(url,{headers:githubHeaders()});
+      if(existing.ok)sha=(await existing.json()).sha;else if(existing.status!==404)throw new Error(`${existing.status} ${await existing.text()}`);
+      const body={message:'Update PlanSurf budget data',content:b64encode(JSON.stringify(syncData,null,2)),branch:config.branch};
+      if(sha)body.sha=sha;
+      const response=await fetch(url.replace(/\?ref=.*$/,''),{method:'PUT',headers:githubHeaders(),body:JSON.stringify(body)});
+      if(!response.ok)throw new Error(`${response.status} ${await response.text()}`);
+      setDirty(false);setSyncStatus('Budget backed up to private GitHub repo');
+    }catch(error){setSyncStatus('Backup failed: '+githubError(error.message));}
+    finally{setSyncing(false);}
+  };
+
   return(
     <div>
       <div className="hdr">
-        <h1>💵 Budget Planner</h1>
+        <h1>💵 Budget Planner <span className="app-tag">PlanSurf</span></h1>
         <div className="hdr-r">
+          <span className="sync-status">{syncStatus}</span>
+          <button className="ibtn" title="GitHub budget backup settings" onClick={()=>setSyncModal(true)}>☁</button>
           <button className={`ibtn ${dark?'on':''}`} onClick={()=>setDark(!dark)}>{dark?'☀':'☾'}</button>
         </div>
       </div>
@@ -365,11 +432,15 @@ function App(){
         <div className="io">
           <button onClick={exportAll}>↓ Export</button>
           <button onClick={importAll}>↑ Import</button>
+          <button onClick={pushGitHub} disabled={syncing}>☁ Backup</button>
         </div>
       </div>
 
       {/* Goal modal */}
       {goalModal&&<GoalModal onClose={()=>setGoalModal(false)} onSave={g=>{addGoal(g);setGoalModal(false);}} />}
+      {syncModal&&<SyncModal config={syncConfig} token={githubToken} dirty={dirty} syncing={syncing}
+        onClose={()=>setSyncModal(false)} onConfig={config=>saveSyncConfig(config)} onToken={setGithubToken}
+        onPull={pullGitHub} onPush={pushGitHub} status={syncStatus} />}
     </div>
   );
 }
@@ -396,6 +467,23 @@ function GoalModal({onClose,onSave}){
       </div>
     </div>
   );
+}
+
+function SyncModal({config,token,dirty,syncing,onClose,onConfig,onToken,onPull,onPush,status}){
+  const [owner,setOwner]=useState(config.owner||DEFAULT_SYNC_CONFIG.owner);
+  const [repo,setRepo]=useState(config.repo||DEFAULT_SYNC_CONFIG.repo);
+  const [path,setPath]=useState(config.path||DEFAULT_SYNC_CONFIG.path);
+  const [branch,setBranch]=useState(config.branch||DEFAULT_SYNC_CONFIG.branch);
+  const saveSettings=()=>({owner:owner.trim()||DEFAULT_SYNC_CONFIG.owner,repo:repo.trim()||DEFAULT_SYNC_CONFIG.repo,path:path.trim()||DEFAULT_SYNC_CONFIG.path,branch:branch.trim()||DEFAULT_SYNC_CONFIG.branch});
+  return <div className="modal-ov" onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
+    <h3>☁ Private GitHub Budget Backup</h3>
+    <div className="sync-note">Budget data stays in this browser until you choose to back it up. This uses a separate JSON file, <strong>plansurf.budget-data.json</strong>, in the same repository as your other PlanSurf data.</div>
+    <div className="fg-row"><div className="fg"><label>GitHub owner / username</label><input value={owner} onChange={e=>setOwner(e.target.value)} placeholder="your-username" /></div><div className="fg"><label>Private repository</label><input value={repo} onChange={e=>setRepo(e.target.value)} placeholder="plansurf-data" /></div></div>
+    <div className="fg-row"><div className="fg"><label>Budget data file path</label><input value={path} onChange={e=>setPath(e.target.value)} /></div><div className="fg"><label>Branch</label><input value={branch} onChange={e=>setBranch(e.target.value)} /></div></div>
+    <div className="fg"><label>Fine-grained personal access token</label><input type="password" value={token} onChange={e=>onToken(e.target.value)} placeholder="github_pat_..." /><div className="hint">Grant Contents: Read and write for this private repository only. The token is used for this session and never stored.</div></div>
+    <div className="sync-note">Status: {status}{dirty?' · local changes need backup':''}</div>
+    <div className="sync-actions"><button className="btn btn-g" onClick={onClose}>Close</button><button className="btn btn-g" disabled={syncing} onClick={()=>{const settings=saveSettings();onConfig(settings);onPull(settings);}}>↓ Pull latest</button><button className="btn btn-p" disabled={syncing} onClick={()=>{const settings=saveSettings();onConfig(settings);onPush(settings);}}>↑ Save local data</button></div>
+  </div></div>;
 }
 
 ReactDOM.createRoot(document.getElementById('app')).render(<App />);
