@@ -265,6 +265,14 @@ function App(){
   const githubHeaders=()=>({'Accept':'application/vnd.github+json','Authorization':`Bearer ${githubToken}`,'X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json','Cache-Control':'no-cache'});
   const validSync=config=>config.owner&&config.repo&&config.path&&config.branch&&githubToken;
   const saveSyncConfig=config=>{setSyncConfig(config);save(GITHUB_CONFIG,config);};
+  const getGitHubFile=async config=>{
+    const url=githubUrl(config);
+    let response=await fetch(url,{headers:githubHeaders(),cache:'no-store'});
+    if(response.status===404){
+      response=await fetch(`${url}&refresh=${Date.now()}`,{headers:githubHeaders(),cache:'no-store'});
+    }
+    return response;
+  };
   const explainNotFound=async(config)=>{
     const repoResponse=await fetch(githubRepoUrl(config),{headers:githubHeaders()});
     if(repoResponse.ok)return`Budget file not found at ${config.path} on branch ${config.branch}. Check the GitHub filename and branch, then use Save local data.`;
@@ -281,7 +289,7 @@ function App(){
     if(dirty&&!window.confirm('Pulling will replace unsaved local changes. Continue?'))return;
     setSyncing(true);setSyncStatus('Pulling budget from GitHub...');
     try{
-      const response=await fetch(githubUrl(config),{headers:githubHeaders()});
+      const response=await getGitHubFile(config);
       if(response.ok){
         applySyncData(JSON.parse(b64decode((await response.json()).content)));
       }else if(response.status===404){
@@ -297,15 +305,28 @@ function App(){
     if(!validSync(config)){setSyncStatus('Complete GitHub settings first');return;}
     setSyncing(true);setSyncStatus('Saving budget to GitHub...');
     try{
-      const url=githubContentsUrl(config);let sha=null;const existing=await fetch(`${url}?ref=${encodeURIComponent(config.branch)}&t=${Date.now()}`,{headers:githubHeaders(),cache:'no-store'});
+      const url=githubContentsUrl(config);let sha=null;const existing=await getGitHubFile(config);
       if(existing.ok)sha=(await existing.json()).sha;
       else if(existing.status===404){
         const repoResponse=await fetch(githubRepoUrl(config),{headers:githubHeaders()});
         if(!repoResponse.ok)throw new Error(`${repoResponse.status} ${await repoResponse.text()}`);
+        const createResponse=await fetch(`${url}?ref=${encodeURIComponent(config.branch)}`,{headers:githubHeaders(),cache:'no-store'});
+        if(createResponse.ok){
+          sha=(await createResponse.json()).sha;
+        }else if(createResponse.status!==404){
+          throw new Error(`${createResponse.status} ${await createResponse.text()}`);
+        }
       }else throw new Error(`${existing.status} ${await existing.text()}`);
       const body={message:'Update PlanSurf budget data',content:b64encode(JSON.stringify(syncData,null,2)),branch:config.branch};
       if(sha)body.sha=sha;
-      const response=await fetch(url,{method:'PUT',headers:githubHeaders(),body:JSON.stringify(body)});
+      let response=await fetch(url,{method:'PUT',headers:githubHeaders(),body:JSON.stringify(body)});
+      if(response.status===422&&!sha){
+        const retry=await getGitHubFile(config);
+        if(retry.ok){
+          body.sha=(await retry.json()).sha;
+          response=await fetch(url,{method:'PUT',headers:githubHeaders(),body:JSON.stringify(body)});
+        }
+      }
       if(!response.ok)throw new Error(`${response.status} ${await response.text()}`);
       setDirty(false);setSyncStatus('Budget backed up to private GitHub repo');
     }catch(error){setSyncStatus('Backup failed: '+githubError(error.message));}
