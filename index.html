@@ -143,7 +143,7 @@ const DEFAULT_SYNC_CONFIG={owner:'beawart',repo:'plansurf-data',path:'plansurf.b
 const getSyncConfig=()=>{const saved=load(GITHUB_CONFIG,{});return{owner:saved.owner||DEFAULT_SYNC_CONFIG.owner,repo:saved.repo||DEFAULT_SYNC_CONFIG.repo,path:saved.path||DEFAULT_SYNC_CONFIG.path,branch:saved.branch||DEFAULT_SYNC_CONFIG.branch};};
 const b64encode=s=>{const bytes=new TextEncoder().encode(s);let bin='';bytes.forEach(b=>bin+=String.fromCharCode(b));return btoa(bin);};
 const b64decode=s=>{const bin=atob(s.replace(/\n/g,'')),bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));return new TextDecoder().decode(bytes);};
-const githubError=x=>{if(x.includes('401'))return'Token is invalid or expired.';if(x.includes('403'))return'Token lacks repository access.';if(x.includes('404'))return'Repository or budget file was not found.';if(x.includes('409'))return'The file changed elsewhere. Pull the latest copy first.';return x.slice(0,180);};
+const githubError=x=>{try{const data=JSON.parse(x);if(data.message)return data.message;}catch{}if(x.includes('401'))return'Token is invalid or expired.';if(x.includes('403'))return'Token lacks repository access.';if(x.includes('404'))return'Repository or budget file was not found.';if(x.includes('409'))return'The file changed elsewhere. Pull the latest copy first.';return x.slice(0,180);};
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const mk=(y,m)=>`${y}-${String(m+1).padStart(2,'0')}`;
 const fmt=n=>n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -258,7 +258,8 @@ function App(){
   const importAll=()=>{const i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.transactions)setTransactions(d.transactions);if(d.goals)setGoals(d.goals);}catch{alert('Invalid file');}};r.readAsText(f);};i.click();};
 
   const syncData={version:1,app:'plansurf-budget',transactions,goals,updatedAt:new Date().toISOString()};
-  const githubUrl=config=>`https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${config.path.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(config.branch)}`;
+  const githubContentsUrl=config=>`https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${config.path.split('/').map(encodeURIComponent).join('/')}`;
+  const githubUrl=config=>`${githubContentsUrl(config)}?ref=${encodeURIComponent(config.branch)}`;
   const githubRepoUrl=config=>`https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}`;
   const githubRawUrl=config=>`https://raw.githubusercontent.com/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/${encodeURIComponent(config.branch)}/${config.path.split('/').map(encodeURIComponent).join('/')}`;
   const githubHeaders=()=>({'Accept':'application/vnd.github+json','Authorization':`Bearer ${githubToken}`,'X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json','Cache-Control':'no-cache'});
@@ -296,7 +297,7 @@ function App(){
     if(!validSync(config)){setSyncStatus('Complete GitHub settings first');return;}
     setSyncing(true);setSyncStatus('Saving budget to GitHub...');
     try{
-      const url=githubUrl(config);let sha=null;const existing=await fetch(url,{headers:githubHeaders()});
+      const url=githubContentsUrl(config);let sha=null;const existing=await fetch(`${url}?ref=${encodeURIComponent(config.branch)}&t=${Date.now()}`,{headers:githubHeaders(),cache:'no-store'});
       if(existing.ok)sha=(await existing.json()).sha;
       else if(existing.status===404){
         const repoResponse=await fetch(githubRepoUrl(config),{headers:githubHeaders()});
@@ -304,7 +305,7 @@ function App(){
       }else throw new Error(`${existing.status} ${await existing.text()}`);
       const body={message:'Update PlanSurf budget data',content:b64encode(JSON.stringify(syncData,null,2)),branch:config.branch};
       if(sha)body.sha=sha;
-      const response=await fetch(url.replace(/\?ref=.*$/,''),{method:'PUT',headers:githubHeaders(),body:JSON.stringify(body)});
+      const response=await fetch(url,{method:'PUT',headers:githubHeaders(),body:JSON.stringify(body)});
       if(!response.ok)throw new Error(`${response.status} ${await response.text()}`);
       setDirty(false);setSyncStatus('Budget backed up to private GitHub repo');
     }catch(error){setSyncStatus('Backup failed: '+githubError(error.message));}
