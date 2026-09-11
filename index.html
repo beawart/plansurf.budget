@@ -258,14 +258,14 @@ function App(){
   const importAll=()=>{const i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.transactions)setTransactions(d.transactions);if(d.goals)setGoals(d.goals);}catch{alert('Invalid file');}};r.readAsText(f);};i.click();};
 
   const syncData={version:1,app:'plansurf-budget',transactions,goals,updatedAt:new Date().toISOString()};
-  const githubUrl=config=>`https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${config.path.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(config.branch)}`;
+  const githubUrl=config=>`https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${config.path.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(config.branch)}&cacheBust=${Date.now()}`;
   const githubRepoUrl=config=>`https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}`;
-  const githubHeaders=()=>({'Accept':'application/vnd.github+json','Authorization':`Bearer ${githubToken}`,'X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'});
+  const githubHeaders=()=>({'Accept':'application/vnd.github+json','Authorization':`Bearer ${githubToken}`,'X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json','Cache-Control':'no-cache'});
   const validSync=config=>config.owner&&config.repo&&config.path&&config.branch&&githubToken;
   const saveSyncConfig=config=>{setSyncConfig(config);save(GITHUB_CONFIG,config);};
   const explainNotFound=async(config)=>{
     const repoResponse=await fetch(githubRepoUrl(config),{headers:githubHeaders()});
-    if(repoResponse.ok)return`Budget file not found at ${config.path} on branch ${config.branch}. Save local data once to create it.`;
+    if(repoResponse.ok)return`Budget file not found at ${config.path} on branch ${config.branch}. Check the GitHub filename and branch, then use Save local data.`;
     if(repoResponse.status===401)return'Token is invalid or expired.';
     if(repoResponse.status===403)return'Token lacks permission to view this repository.';
     return`Repository ${config.owner}/${config.repo} is not visible to this token. Check the owner, repository name, and token repository access.`;
