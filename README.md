@@ -1,0 +1,2 @@
+# ExpensesManager
+Lightweight expense manager
