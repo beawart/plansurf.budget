@@ -88,6 +88,16 @@ button{cursor:pointer;font-family:inherit;}input,textarea,select{font-family:inh
 .tx-table td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
 .tx-table tr{background:var(--surface);transition:.12s;}
 .tx-table tr:hover{background:var(--surface-alt);}
+.table-tools{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.table-tools input{flex:1;min-width:180px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface-alt);color:var(--text);font-size:12px;outline:none;}
+.table-tools input:focus{border-color:var(--accent);}
+.table-tools .count{font-size:11px;color:var(--text-dim);margin-left:auto;}
+.sort-btn{background:none;border:1px solid var(--border);border-radius:var(--radius);padding:7px 10px;color:var(--text-sec);font-size:11px;font-weight:600;}
+.sort-btn:hover{background:var(--surface-alt);color:var(--text);}
+.edit-cell{width:100%;padding:6px 8px;border:1px solid var(--accent);border-radius:6px;background:var(--surface-alt);color:var(--text);font-size:12px;outline:none;}
+.edit-cell:focus{box-shadow:0 0 0 2px var(--accent-light);}
+.row-edit-actions{display:flex;gap:4px;white-space:nowrap;}
+.row-edit-actions .abtn.save{color:var(--green);}.row-edit-actions .abtn.cancel{color:var(--text-sec);}
 .tx-type{font-weight:700;}
 .tx-type.income{color:var(--green);}
 .tx-type.expense{color:var(--red);}
@@ -203,7 +213,7 @@ function App(){
   useEffect(()=>{document.documentElement.setAttribute('data-theme',dark?'dark':'light');localStorage.setItem('bp-dark',dark?'1':'0');},[dark]);
 
   const key=mk(curYear,curMonth);
-  const monthTx=(transactions[key]||[]).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const monthTx=transactions[key]||[];
 
   // Add transaction
   const addTx=(e)=>{
@@ -215,11 +225,19 @@ function App(){
     setTransactions(p=>({...p,[txKey]:[...(p[txKey]||[]),tx]}));
     setDesc('');setAmt('');
   };
-  const deleteTx=(id)=>{setTransactions(p=>({...p,[key]:monthTx.filter(t=>t.id!==id)}));};
+  const updateTx=(originalKey,updatedTx)=>{
+    const nextDateKey=mk(new Date(updatedTx.date).getFullYear(),new Date(updatedTx.date).getMonth());
+    setTransactions(p=>{
+      const remaining=(p[originalKey]||[]).filter(t=>t.id!==updatedTx.id);
+      if(nextDateKey===originalKey)return {...p,[originalKey]:[...remaining,updatedTx]};
+      return {...p,[originalKey]:remaining,[nextDateKey]:[...(p[nextDateKey]||[]),updatedTx]};
+    });
+  };
+  const deleteTx=(id)=>{setTransactions(p=>({...p,[key]:(p[key]||[]).filter(t=>t.id!==id)}));};
 
   // Stats
-  const income=monthTx.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
-  const expenses=monthTx.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const income=monthTx.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount||0),0);
+  const expenses=monthTx.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount||0),0);
   const balance=income-expenses;
   const savingsRate=income>0?Math.round((balance/income)*100):0;
 
@@ -227,7 +245,7 @@ function App(){
   const catBreakdown=useMemo(()=>{
     const map={};
     monthTx.filter(t=>t.type==='expense').forEach(t=>{
-      map[t.category]=(map[t.category]||0)+t.amount;
+    map[t.category]=(map[t.category]||0)+Number(t.amount||0);
     });
     return CATEGORIES.filter(c=>c.type==='expense'&&map[c.id]).map(c=>({...c,amount:map[c.id],pct:expenses>0?Math.round(map[c.id]/expenses*100):0})).sort((a,b)=>b.amount-a.amount);
   },[monthTx,expenses]);
@@ -445,25 +463,7 @@ function App(){
           {monthTx.length===0?(
             <div style={{textAlign:'center',padding:'30px',color:'var(--text-dim)',fontSize:13}}>No transactions this month.</div>
           ):(
-            <div style={{overflowX:'auto'}}>
-              <table className="tx-table">
-                <thead><tr><th>Date</th><th>Description</th><th>Category</th><th style={{textAlign:'right'}}>Amount</th><th></th></tr></thead>
-                <tbody>
-                  {monthTx.map(tx=>{
-                    const ci=CAT_MAP[tx.category];
-                    return(
-                      <tr key={tx.id}>
-                        <td style={{fontSize:12,color:'var(--text-dim)',whiteSpace:'nowrap'}}>{tx.date}</td>
-                        <td>{tx.desc}</td>
-                        <td><span className="tx-cat-badge" style={{background:(ci?.color||'#666')+'20',color:ci?.color||'var(--text-sec)'}}>{ci?.icon} {ci?.label||tx.category}</span></td>
-                        <td style={{textAlign:'right'}}><span className={`tx-type ${tx.type}`}>{tx.type==='income'?'+':'-'} ${fmt(tx.amount)}</span></td>
-                        <td><div className="tx-acts"><button className="abtn del" onClick={()=>deleteTx(tx.id)}>✕</button></div></td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <TransactionsTable rows={monthTx} monthKey={key} onUpdate={updateTx} onDelete={deleteTx} />
           )}
         </div>
 
@@ -481,6 +481,89 @@ function App(){
         onPull={pullGitHub} onPush={pushGitHub} status={syncStatus} />}
     </div>
   );
+}
+
+function TransactionsTable({rows,monthKey,onUpdate,onDelete}){
+  const [query,setQuery]=useState('');
+  const [sort,setSort]=useState({key:'date',direction:'desc'});
+  const [editingId,setEditingId]=useState(null);
+  const [draft,setDraft]=useState(null);
+
+  const visibleRows=useMemo(()=>{
+    const needle=query.trim().toLowerCase();
+    const filtered=rows.filter(row=>!needle||`${row.date} ${row.desc} ${CAT_MAP[row.category]?.label||row.category}`.toLowerCase().includes(needle));
+    return [...filtered].sort((a,b)=>{
+      const av=a[sort.key]??'',bv=b[sort.key]??'';
+      const an=sort.key==='amount'?Number(av):NaN;
+      const comparison=!Number.isNaN(an)&&!Number.isNaN(Number(bv))
+        ?an-Number(bv)
+        :String(av).localeCompare(String(bv));
+      return sort.direction==='asc'?comparison:-comparison;
+    });
+  },[rows,query,sort]);
+
+  const startEdit=row=>{setEditingId(row.id);setDraft({...row});};
+  const cancelEdit=()=>{setEditingId(null);setDraft(null);};
+  const saveEdit=()=>{
+    if(!draft)return;
+    const category=CAT_MAP[draft.category];
+    onUpdate(monthKey,{...draft,amount:Number(draft.amount)||0,type:category?.type||'expense'});
+    cancelEdit();
+  };
+  const toggleSort=key=>setSort(current=>current.key===key
+    ?{key,direction:current.direction==='asc'?'desc':'asc'}
+    :{key,direction:'asc'});
+  const sortLabel=key=>sort.key===key?(sort.direction==='asc'?'↑':'↓'):'';
+
+  return <>
+    <div className="table-tools">
+      <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Filter rows..." aria-label="Filter transaction rows" />
+      {[
+        {key:'date',label:'Date'},
+        {key:'desc',label:'Description'},
+        {key:'category',label:'Category'},
+        {key:'amount',label:'Amount'},
+      ].map(column=><button key={column.key} className="sort-btn" onClick={()=>toggleSort(column.key)}>
+        Sort {column.label} {sortLabel(column.key)}
+      </button>)}
+      <span className="count">{visibleRows.length} of {rows.length} rows</span>
+    </div>
+    <div style={{overflowX:'auto'}}>
+      <table className="tx-table">
+        <thead><tr><th>Date</th><th>Description</th><th>Category</th><th style={{textAlign:'right'}}>Amount</th><th></th></tr></thead>
+        <tbody>
+          {visibleRows.map(row=>editingId===row.id
+            ? <TransactionEditRow key={row.id} draft={draft} setDraft={setDraft} onSave={saveEdit} onCancel={cancelEdit} />
+            : <TransactionViewRow key={row.id} row={row} onEdit={startEdit} onDelete={onDelete} />)}
+        </tbody>
+      </table>
+    </div>
+  </>;
+}
+
+function TransactionViewRow({row,onEdit,onDelete}){
+  const category=CAT_MAP[row.category];
+  return <tr>
+    <td style={{fontSize:12,color:'var(--text-dim)',whiteSpace:'nowrap'}}>{row.date}</td>
+    <td>{row.desc}</td>
+    <td><span className="tx-cat-badge" style={{background:(category?.color||'#666')+'20',color:category?.color||'var(--text-sec)'}}>{category?.icon} {category?.label||row.category}</span></td>
+    <td style={{textAlign:'right'}}><span className={`tx-type ${row.type}`}>{row.type==='income'?'+':'-'} ${fmt(Number(row.amount)||0)}</span></td>
+    <td><div className="tx-acts"><button className="abtn" onClick={()=>onEdit(row)}>Edit</button><button className="abtn del" onClick={()=>onDelete(row.id)}>✕</button></div></td>
+  </tr>;
+}
+
+function TransactionEditRow({draft,setDraft,onSave,onCancel}){
+  const setValue=(key,value)=>setDraft({...draft,[key]:value});
+  return <tr>
+    <td><input className="edit-cell" type="date" value={draft.date||''} onChange={e=>setValue('date',e.target.value)} /></td>
+    <td><input className="edit-cell" value={draft.desc||''} onChange={e=>setValue('desc',e.target.value)} /></td>
+    <td><select className="edit-cell" value={draft.category||''} onChange={e=>setValue('category',e.target.value)}>
+      <optgroup label="Income">{CATEGORIES.filter(c=>c.type==='income').map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}</optgroup>
+      <optgroup label="Expense">{CATEGORIES.filter(c=>c.type==='expense').map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}</optgroup>
+    </select></td>
+    <td><input className="edit-cell" type="number" min="0" step="0.01" value={draft.amount??''} onChange={e=>setValue('amount',e.target.value)} /></td>
+    <td><div className="row-edit-actions"><button className="abtn save" onClick={onSave}>Save</button><button className="abtn cancel" onClick={onCancel}>Cancel</button></div></td>
+  </tr>;
 }
 
 function GoalModal({onClose,onSave}){
