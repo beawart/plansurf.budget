@@ -172,6 +172,7 @@ const CATEGORIES=[
   {id:'salary',label:'Salary',icon:'💰',color:'#16a34a',type:'income'},
   {id:'freelance',label:'Freelance',icon:'💻',color:'#2563eb',type:'income'},
   {id:'investment',label:'Investment',icon:'📈',color:'#9333ea',type:'income'},
+  {id:'rental-income',label:'Rental Income',icon:'🏘️',color:'#0891b2',type:'income'},
   {id:'other-income',label:'Other Income',icon:'🎁',color:'#0891b2',type:'income'},
   {id:'rent',label:'Rent / Mortgage',icon:'🏠',color:'#dc2626',type:'expense'},
   {id:'groceries',label:'Groceries',icon:'🛒',color:'#ea580c',type:'expense'},
@@ -192,7 +193,8 @@ const inferCategory=description=>{
   const text=description.toLowerCase();
   const rules=[
     ['salary',['salary','payroll','paycheck','wages']],['freelance',['freelance','client work','contract work']],
-    ['investment',['investment','dividend','stock sale','interest']],['other-income',['bonus','gift','refund','cashback']],
+    ['investment',['investment','dividend','stock sale','interest']],['rental-income',['rental income','rent received','tenant payment','tenant rent','property rent']],
+    ['other-income',['bonus','gift','refund','cashback']],
     ['rent',['rent','mortgage','landlord']],['groceries',['grocery','groceries','supermarket','food shop']],
     ['transport',['uber','lyft','taxi','fuel','gas station','petrol','parking','train','bus']],
     ['utilities',['electric','electricity','water bill','utility','utilities','internet','phone bill']],
