@@ -22,7 +22,15 @@ button{cursor:pointer;font-family:inherit;}input,textarea,select{font-family:inh
 .ibtn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
 
 .layout{max-width:1200px;margin:0 auto;padding:20px 28px;}
-@media(max-width:700px){.hdr{padding:10px 14px;}.hdr h1{font-size:15px;}.hdr .app-tag{display:none;}.sync-status{display:none;}.layout{padding:14px;}}
+@media(max-width:700px){
+  .hdr{padding:9px 12px;}.hdr h1{font-size:15px;}.hdr .app-tag{display:none;}.sync-status{display:none;}
+  .layout{padding:12px;}.month-nav{gap:6px;margin-bottom:14px;}.month-nav h2{flex:1;min-width:0;font-size:18px;}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:16px;}.scard{padding:12px;}.scard .val{font-size:21px;}.scard .icon{top:10px;right:10px;font-size:19px;}
+  .chart-sec,.goals-sec,.cat-sec,.tx-sec{padding:14px 12px;margin-bottom:12px;}.goals-grid,.cat-grid{grid-template-columns:1fr;}
+  .add-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;}.add-row input[type="text"]{grid-column:1 / -1;min-width:0;}.add-row input[type="number"]{width:auto;}.add-row input,.add-row select,.add-row button{width:100%;min-width:0;}
+  .table-tools{gap:6px;}.table-tools input{min-width:0;flex-basis:100%;}.table-tools .count{margin-left:0;}.tx-table{min-width:620px;}.tx-acts,.goal-acts{opacity:1;}
+  .io{gap:6px;}.io button{flex:1;padding:8px 6px;}
+}
 
 /* Month nav */
 .month-nav{display:flex;align-items:center;gap:8px;margin-bottom:20px;}
@@ -180,6 +188,22 @@ const CATEGORIES=[
   {id:'other-expense',label:'Other',icon:'📦',color:'#64748b',type:'expense'},
 ];
 const CAT_MAP={};CATEGORIES.forEach(c=>CAT_MAP[c.id]=c);
+const inferCategory=description=>{
+  const text=description.toLowerCase();
+  const rules=[
+    ['salary',['salary','payroll','paycheck','wages']],['freelance',['freelance','client work','contract work']],
+    ['investment',['investment','dividend','stock sale','interest']],['other-income',['bonus','gift','refund','cashback']],
+    ['rent',['rent','mortgage','landlord']],['groceries',['grocery','groceries','supermarket','food shop']],
+    ['transport',['uber','lyft','taxi','fuel','gas station','petrol','parking','train','bus']],
+    ['utilities',['electric','electricity','water bill','utility','utilities','internet','phone bill']],
+    ['entertainment',['movie','cinema','concert','game','entertainment']],['holiday',['flight','hotel','airbnb','vacation','holiday','travel']],
+    ['dining',['restaurant','dinner','lunch','breakfast','coffee','takeout','takeaway','dining']],['health',['doctor','dentist','pharmacy','medicine','health']],
+    ['shopping',['shopping','clothes','clothing','amazon','mall']],['education',['course','tuition','school','book','education']],
+    ['insurance',['insurance']],['subscriptions',['netflix','spotify','subscription','membership']],['other-expense',['expense']]
+  ];
+  const match=rules.find(([,keywords])=>keywords.some(keyword=>text.includes(keyword)));
+  return match?.[0]||null;
+};
 
 function App(){
   const now=new Date();
@@ -451,7 +475,7 @@ function App(){
         <div className="tx-sec">
           <h3>💳 Transactions</h3>
           <form className="add-row" onSubmit={addTx}>
-            <input type="text" value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Description" />
+            <input type="text" value={desc} onChange={e=>{const value=e.target.value;setDesc(value);const suggested=inferCategory(value);if(suggested)setCat(suggested);}} placeholder="Description" />
             <input type="number" value={amt} onChange={e=>setAmt(e.target.value)} placeholder="Amount" step="0.01" min="0" />
             <select value={cat} onChange={e=>setCat(e.target.value)}>
               <optgroup label="Income">{CATEGORIES.filter(c=>c.type==='income').map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}</optgroup>
@@ -555,9 +579,10 @@ function TransactionViewRow({row,onEdit,onDelete}){
 
 function TransactionEditRow({draft,setDraft,onSave,onCancel}){
   const setValue=(key,value)=>setDraft({...draft,[key]:value});
+  const setDescription=value=>{const suggested=inferCategory(value);setDraft({...draft,desc:value,...(suggested?{category:suggested}:{}),});};
   return <tr>
     <td><input className="edit-cell" type="date" value={draft.date||''} onChange={e=>setValue('date',e.target.value)} /></td>
-    <td><input className="edit-cell" value={draft.desc||''} onChange={e=>setValue('desc',e.target.value)} /></td>
+    <td><input className="edit-cell" value={draft.desc||''} onChange={e=>setDescription(e.target.value)} /></td>
     <td><select className="edit-cell" value={draft.category||''} onChange={e=>setValue('category',e.target.value)}>
       <optgroup label="Income">{CATEGORIES.filter(c=>c.type==='income').map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}</optgroup>
       <optgroup label="Expense">{CATEGORIES.filter(c=>c.type==='expense').map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}</optgroup>
