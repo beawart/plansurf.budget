@@ -158,7 +158,6 @@ const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d;}catch{retu
 const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const uid=()=>Math.random().toString(36).substr(2,9)+Date.now().toString(36);
 const API_BASE_URL=(window.__PLANSURF_API__ || 'https://plansurf-budget.onrender.com').replace(/\/$/, '');
-const SYNC_BUILD='budget-sync-2026-09-11-6';
 const DEFAULT_SYNC_CONFIG={apiBaseUrl:API_BASE_URL};
 const getSyncConfig=()=>{const saved=load('budget-planner-api-v1',{});return{apiBaseUrl:saved.apiBaseUrl||API_BASE_URL};};
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -215,7 +214,7 @@ function App(){
   const [syncModal,setSyncModal]=useState(false);
   const [syncConfig,setSyncConfig]=useState(getSyncConfig);
   const [sessionToken,setSessionToken]=useState('');
-  const [syncStatus,setSyncStatus]=useState(`Local cache loaded · ${SYNC_BUILD}`);
+  const [syncStatus,setSyncStatus]=useState('Ready');
   const [dirty,setDirty]=useState(false);
   const [syncing,setSyncing]=useState(false);
   const syncReady=useRef(false);
@@ -319,7 +318,7 @@ function App(){
     try{
       saveSyncConfig(config);
       const payload=await apiRequest(config,'/api/login',{method:'POST',body:JSON.stringify({password}),headers:{}});
-      setSessionToken(payload.token);setSyncStatus('Signed in. Session expires in 12 hours.');
+      setSessionToken(payload.token);setSyncStatus('Signed in');
       return true;
     }catch(error){setSyncStatus('Sign in failed: '+error.message);return false;}
     finally{setSyncing(false);}
@@ -335,19 +334,19 @@ function App(){
   const pullGitHub=async(config=syncConfig)=>{
     if(!sessionToken){setSyncStatus('Sign in before syncing budget data');return;}
     if(dirty&&!window.confirm('Pulling will replace unsaved local changes. Continue?'))return;
-    setSyncing(true);setSyncStatus('Pulling budget from the API...');
+    setSyncing(true);setSyncStatus('Loading budget...');
     try{
       applySyncData(await apiRequest(config,'/api/budget'));
-      setDirty(false);setSyncStatus('Budget synced from private GitHub storage');
+      setDirty(false);setSyncStatus('Budget synced');
     }catch(error){setSyncStatus('Pull failed: '+error.message);}
     finally{setSyncing(false);}
   };
   const pushGitHub=async(config=syncConfig)=>{
     if(!sessionToken){setSyncStatus('Sign in before syncing budget data');return;}
-    setSyncing(true);setSyncStatus('Saving budget through the API...');
+    setSyncing(true);setSyncStatus('Saving budget...');
     try{
       await apiRequest(config,'/api/budget',{method:'PUT',body:JSON.stringify(syncData)});
-      setDirty(false);setSyncStatus('Budget backed up to private GitHub storage');
+      setDirty(false);setSyncStatus('Budget saved');
     }catch(error){setSyncStatus('Backup failed: '+error.message);}
     finally{setSyncing(false);}
   };
@@ -358,7 +357,7 @@ function App(){
         <h1>💵 Budget Planner <span className="app-tag">PlanSurf</span></h1>
         <div className="hdr-r">
           <span className="sync-status">{syncStatus}</span>
-          <button className="ibtn" title="GitHub budget backup settings" onClick={()=>setSyncModal(true)}>☁</button>
+          <button className="ibtn" title="Budget sync" onClick={()=>setSyncModal(true)}>☁</button>
           <button className={`ibtn ${dark?'on':''}`} onClick={()=>setDark(!dark)}>{dark?'☀':'☾'}</button>
         </div>
       </div>
@@ -594,14 +593,11 @@ function GoalModal({onClose,onSave}){
 }
 
 function SyncModal({config,sessionToken,dirty,syncing,onClose,onConfig,onLogin,onLogout,onPull,onPush,status}){
-  const [apiBaseUrl,setApiBaseUrl]=useState(config.apiBaseUrl||DEFAULT_SYNC_CONFIG.apiBaseUrl);
   const [password,setPassword]=useState('');
-  const saveSettings=()=>({apiBaseUrl:apiBaseUrl.trim().replace(/\/$/,'')||DEFAULT_SYNC_CONFIG.apiBaseUrl});
+  const saveSettings=()=>config;
   return <div className="modal-ov" onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
-    <h3>Private Budget Sync</h3>
-    <div className="sync-note">Sign in to sync through your private GitHub repository. Your GitHub token stays on the Render server. The session ends when you sign out or close/reload this page.</div>
-    <div className="fg"><label>API URL</label><input type="url" value={apiBaseUrl} onChange={e=>setApiBaseUrl(e.target.value)} placeholder="https://plansurf-budget.onrender.com" /></div>
-    {!sessionToken&&<div className="fg"><label>App password</label><input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="current-password" onKeyDown={async e=>{if(e.key==='Enter'&&!syncing&&await onLogin(saveSettings(),password))setPassword('');}} /><div className="hint">This is the app password configured in Render, not your GitHub token.</div></div>}
+    <h3>Budget Sync</h3>
+    {!sessionToken&&<div className="fg"><label>Password</label><input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="current-password" onKeyDown={async e=>{if(e.key==='Enter'&&!syncing&&await onLogin(saveSettings(),password))setPassword('');}} />{status&&<div className="hint">{status}</div>}</div>}
     <div className="sync-note">Status: {status}{dirty?' · local changes need backup':''}</div>
     <div className="sync-actions"><button className="btn btn-g" onClick={onClose}>Close</button>{sessionToken?<><button className="btn btn-g" disabled={syncing} onClick={()=>{const settings=saveSettings();onConfig(settings);onPull(settings);}}>↓ Pull latest</button><button className="btn btn-p" disabled={syncing} onClick={()=>{const settings=saveSettings();onConfig(settings);onPush(settings);}}>↑ Save local data</button><button className="btn btn-g" disabled={syncing} onClick={()=>onLogout(saveSettings())}>Sign out</button></>:<button className="btn btn-p" disabled={syncing||!password.trim()} onClick={async()=>{if(await onLogin(saveSettings(),password))setPassword('');}}>{syncing?'Signing in...':'Sign in'}</button>}</div>
   </div></div>;
