@@ -13,35 +13,52 @@ This repo includes a safer architecture split:
 
 ## Repo layout
 
-- `api/server.js` – backend API that reads/writes the GitHub-hosted budget file
-- `api/.env.example` – environment variables for the API
-- `api/Dockerfile` – container build for the API
-- `docker-compose.yml` – local container setup
+- `api/server.js` ï¿½ backend API that reads/writes the GitHub-hosted budget file
+- `api/.env.example` ï¿½ environment variables for the API
+- `api/Dockerfile` ï¿½ container build for the API
+- `docker-compose.yml` ï¿½ local container setup
 
-## Why this is safer
+## Security model
 
-The browser should not contain a GitHub PAT. The backend should fetch and save the file using a token stored only on the server.
+The browser signs in with the app password and keeps a short-lived session token in memory. The Render API validates the session and uses the GitHub token stored in Render's environment. Neither secret is embedded in the public HTML.
 
-## Local setup
+This is a shared-password personal deployment, not a multi-user authentication system. Do not reuse the GitHub password as `APP_PASSWORD`.
 
-1. Copy `api/.env.example` to `api/.env`
-2. Fill in your actual GitHub values and set a strong `API_KEY`
-3. Run:
+## Local container
 
-   docker-compose up --build
+Copy `api/.env.example` to `api/.env`, fill in local values, then run `docker compose up --build` from the repository root. Check `http://localhost:3001/health` for the health response.
 
-4. Check health:
+## Render and GitHub Pages
 
-   http://localhost:3001/health
+The frontend uses `https://plansurf-budget.onrender.com` as its API and expects the Pages origin `https://beawart.github.io`.
 
-5. When calling the API from the frontend, send the `x-api-key` header with the same value as `API_KEY`.
+In Render, set these environment variables on the Web Service:
 
-## Deploying the API
+- `APP_PASSWORD`: a long, unique app password used in the sync dialog. This is shared personal-app access, not a multi-user account system.
+- `SESSION_SECRET`: random signing secret, at least 32 random bytes.
+- `GITHUB_TOKEN`: fine-grained token with Contents read/write access only to `beawart/plansurf-data`.
+- `GITHUB_OWNER=beawart`
+- `GITHUB_REPO=plansurf-data`
+- `GITHUB_PATH=plansurf.budget-data.json`
+- `GITHUB_BRANCH=main`
+- `CORS_ORIGIN=https://beawart.github.io` (origin only; no path)
 
-Use a free Docker hosting provider such as Render or Railway, or a small VM with Docker.
+Remove the old `API_KEY` variable from Render. Never put `APP_PASSWORD`, `SESSION_SECRET`, or `GITHUB_TOKEN` in this repository or the HTML. Redeploy after changing Render variables.
 
-For production, keep these values in the platform secret manager or container environment variables only.
+Generate `SESSION_SECRET` locally in PowerShell and paste it directly into Render's environment settings:
 
-## Important note
+```powershell
+$bytes = New-Object byte[] 48
+$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$rng.GetBytes($bytes)
+[Convert]::ToBase64String($bytes)
+$rng.Dispose()
+```
 
-The existing single-file browser app still contains the old direct GitHub token pattern. Before public deployment, move the GitHub sync logic to the API and ensure the frontend calls the backend API instead of hitting GitHub directly.
+In GitHub **Settings > Pages**, publish the `main` branch from `/ (root)`. Open the Pages URL, open the cloud/sync control, enter the Render API URL and `APP_PASSWORD`, sign in, then use **Pull latest** or **Save local data**. The 12-hour session is held in page memory only; reloading requires signing in again. The GitHub PAT stays on Render.
+
+The free-form `file://` page origin is intentionally not allowed. For local browser testing, serve the page over HTTP and set `CORS_ORIGIN` to that server's exact origin.
+
+## Local container
+
+Copy `api/.env.example` to `api/.env`, fill in local values, then run `docker compose up --build` from the repository root.
