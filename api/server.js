@@ -135,7 +135,9 @@ function validBudgetData(data) {
   return Boolean(
     data &&
     data.app === 'plansurf-budget' &&
-    Array.isArray(data.transactions) &&
+    data.transactions &&
+    typeof data.transactions === 'object' &&
+    !Array.isArray(data.transactions) &&
     Array.isArray(data.goals)
   );
 }

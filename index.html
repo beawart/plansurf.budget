@@ -26,10 +26,9 @@ button{cursor:pointer;font-family:inherit;}input,textarea,select{font-family:inh
   .hdr{padding:9px 12px;}.hdr h1{font-size:15px;}.hdr .app-tag{display:none;}.sync-status{display:none;}
   .layout{padding:12px;}.month-nav{gap:6px;margin-bottom:14px;}.month-nav h2{flex:1;min-width:0;font-size:18px;}
   .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:16px;}.scard{padding:12px;}.scard .val{font-size:21px;}.scard .icon{top:10px;right:10px;font-size:19px;}
-  .chart-sec,.goals-sec,.cat-sec,.tx-sec{padding:14px 12px;margin-bottom:12px;}.goals-grid,.cat-grid{grid-template-columns:1fr;}
+  .chart-sec,.cat-sec,.tx-sec{padding:14px 12px;margin-bottom:12px;}.cat-grid{grid-template-columns:1fr;}
   .add-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;}.add-row input[type="text"]{grid-column:1 / -1;min-width:0;}.add-row input[type="number"]{width:auto;}.add-row input,.add-row select,.add-row button{width:100%;min-width:0;}
-  .table-tools{gap:6px;}.table-tools input{min-width:0;flex-basis:100%;}.table-tools .count{margin-left:0;}.tx-table{min-width:620px;}.tx-acts,.goal-acts{opacity:1;}
-  .io{gap:6px;}.io button{flex:1;padding:8px 6px;}
+  .table-tools{gap:6px;}.table-tools input{min-width:0;flex-basis:100%;}.table-tools .count{margin-left:0;}.tx-table{min-width:620px;}.tx-acts{opacity:1;}
 }
 
 /* Month nav */
@@ -46,26 +45,14 @@ button{cursor:pointer;font-family:inherit;}input,textarea,select{font-family:inh
 .scard .sub{font-size:11px;color:var(--text-sec);margin-top:2px;}
 .scard .icon{position:absolute;top:14px;right:14px;font-size:24px;opacity:.3;}
 
-/* Savings goals */
-.goals-sec{margin-bottom:24px;}
-.goals-sec h3{font-size:14px;font-weight:700;margin-bottom:10px;}
-.goals-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
-.goal-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;position:relative;}
-.goal-card .gname{font-size:13px;font-weight:600;}
-.goal-card .gprog{margin-top:8px;}
-.gbar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;}
-.gfill{height:100%;border-radius:4px;transition:width .4s;}
-.ginfo{display:flex;justify-content:space-between;font-size:11px;color:var(--text-sec);margin-top:4px;}
-.goal-acts{position:absolute;top:10px;right:10px;display:flex;gap:2px;opacity:0;transition:.15s;}
-.goal-card:hover .goal-acts{opacity:1;}
 .abtn{background:none;border:none;color:var(--text-dim);font-size:13px;padding:3px 5px;border-radius:4px;}
 .abtn:hover{background:var(--surface-alt);color:var(--text);}
 .abtn.del:hover{color:var(--red);}
 
 /* Bar chart */
-.chart-sec,.goals-sec,.cat-sec,.tx-sec{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;box-shadow:var(--shadow);}
+.chart-sec,.cat-sec,.tx-sec{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;box-shadow:var(--shadow);}
 .chart-sec{margin-bottom:16px;}
-.goals-sec,.cat-sec,.tx-sec{margin-bottom:16px;}
+.cat-sec,.tx-sec{margin-bottom:16px;}
 .chart-sec h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);margin-bottom:14px;}
 .bar-chart{display:flex;align-items:flex-end;gap:6px;height:140px;padding-bottom:20px;position:relative;border-bottom:1px solid var(--border);}
 .bar-group{flex:1;display:flex;gap:3px;align-items:flex-end;justify-content:center;position:relative;}
@@ -90,7 +77,7 @@ button{cursor:pointer;font-family:inherit;}input,textarea,select{font-family:inh
 .cat-fill{height:100%;border-radius:2px;}
 
 /* Transactions */
-.tx-sec h3,.goals-sec h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-dim);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
+.tx-sec h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-dim);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
 .tx-table{width:100%;border-collapse:separate;border-spacing:0;}
 .tx-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);}
 .tx-table td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
@@ -109,6 +96,7 @@ button{cursor:pointer;font-family:inherit;}input,textarea,select{font-family:inh
 .tx-type{font-weight:700;}
 .tx-type.income{color:var(--green);}
 .tx-type.expense{color:var(--red);}
+.tx-type.investment{color:var(--purple);}
 .tx-cat-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;}
 .tx-acts{display:flex;gap:2px;opacity:0;transition:.15s;}
 tr:hover .tx-acts{opacity:1;}
@@ -133,10 +121,6 @@ tr:hover .tx-acts{opacity:1;}
 .fg input:focus{border-color:var(--accent);}
 .fg-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .macts{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}
-
-.io{display:flex;gap:6px;margin-top:16px;}
-.io button{padding:7px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text-sec);cursor:pointer;}
-.io button:hover{background:var(--surface-alt);}
 
 .sync-note{font-size:12px;color:var(--text-sec);background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:14px;}
 .sync-note strong{color:var(--text);}
@@ -167,7 +151,7 @@ const fmt=n=>n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFraction
 const CATEGORIES=[
   {id:'salary',label:'Salary',icon:'💰',color:'#16a34a',type:'income'},
   {id:'freelance',label:'Freelance',icon:'💻',color:'#2563eb',type:'income'},
-  {id:'investment',label:'Investment',icon:'📈',color:'#9333ea',type:'income'},
+  {id:'investment',label:'Investment',icon:'📈',color:'#9333ea',type:'investment'},
   {id:'rental-income',label:'Rental Income',icon:'🏘️',color:'#0891b2',type:'income'},
   {id:'other-income',label:'Other Income',icon:'🎁',color:'#0891b2',type:'income'},
   {id:'rent',label:'Rent / Mortgage',icon:'🏠',color:'#dc2626',type:'expense'},
@@ -185,6 +169,7 @@ const CATEGORIES=[
   {id:'other-expense',label:'Other',icon:'📦',color:'#64748b',type:'expense'},
 ];
 const CAT_MAP={};CATEGORIES.forEach(c=>CAT_MAP[c.id]=c);
+const isInvestment=tx=>tx.category==='investment'||tx.type==='investment';
 const inferCategory=description=>{
   const text=description.toLowerCase();
   const rules=[
@@ -210,7 +195,6 @@ function App(){
   const [curMonth,setCurMonth]=useState(now.getMonth());
   const [curYear,setCurYear]=useState(now.getFullYear());
   const [dark,setDark]=useState(()=>localStorage.getItem('bp-dark')==='1');
-  const [goalModal,setGoalModal]=useState(false);
   const [syncModal,setSyncModal]=useState(false);
   const [syncConfig,setSyncConfig]=useState(getSyncConfig);
   const [sessionToken,setSessionToken]=useState('');
@@ -259,8 +243,9 @@ function App(){
   const deleteTx=(id)=>{setTransactions(p=>({...p,[key]:(p[key]||[]).filter(t=>t.id!==id)}));};
 
   // Stats
-  const income=monthTx.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount||0),0);
+  const income=monthTx.filter(t=>t.type==='income'&&!isInvestment(t)).reduce((s,t)=>s+Number(t.amount||0),0);
   const expenses=monthTx.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount||0),0);
+  const investments=monthTx.filter(isInvestment).reduce((s,t)=>s+Number(t.amount||0),0);
   const balance=income-expenses;
   const savingsRate=income>0?Math.round((balance/income)*100):0;
 
@@ -281,7 +266,7 @@ function App(){
       while(m<0){m+=12;y--;}
       const k2=mk(y,m);
       const txs=transactions[k2]||[];
-      const inc=txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+      const inc=txs.filter(t=>t.type==='income'&&!isInvestment(t)).reduce((s,t)=>s+t.amount,0);
       const exp=txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
       data.push({label:MONTHS[m].substr(0,3),income:inc,expense:exp});
     }
@@ -289,16 +274,8 @@ function App(){
   },[transactions,curMonth,curYear]);
   const chartMax=Math.max(...chartData.flatMap(d=>[d.income,d.expense]),1);
 
-  // Goals
-  const addGoal=(g)=>{setGoals(p=>[...p,{...g,id:uid(),saved:0}]);};
-  const updateGoalSaved=(id,v)=>{setGoals(p=>p.map(g=>g.id===id?{...g,saved:Math.max(0,g.saved+v)}:g));};
-  const deleteGoal=(id)=>{setGoals(p=>p.filter(g=>g.id!==id));};
-
   const prevMonth=()=>{if(curMonth===0){setCurMonth(11);setCurYear(curYear-1);}else setCurMonth(curMonth-1);};
   const nextMonth=()=>{if(curMonth===11){setCurMonth(0);setCurYear(curYear+1);}else setCurMonth(curMonth+1);};
-
-  const exportAll=()=>{const d={transactions,goals};const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='budget-backup.json';a.click();URL.revokeObjectURL(u);};
-  const importAll=()=>{const i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.transactions)setTransactions(d.transactions);if(d.goals)setGoals(d.goals);}catch{alert('Invalid file');}};r.readAsText(f);};i.click();};
 
   const syncData={version:1,app:'plansurf-budget',transactions,goals,updatedAt:new Date().toISOString()};
   const apiUrl=(config,path)=>`${(config.apiBaseUrl||API_BASE_URL).replace(/\/$/,'')}${path}`;
@@ -373,6 +350,7 @@ function App(){
         <div className="stats">
           <div className="scard"><span className="icon">📥</span><div className="label">Income</div><div className="val" style={{color:'var(--green)'}}>$ {fmt(income)}</div></div>
           <div className="scard"><span className="icon">📤</span><div className="label">Expenses</div><div className="val" style={{color:'var(--red)'}}>$ {fmt(expenses)}</div></div>
+          <div className="scard"><span className="icon">📈</span><div className="label">Investments</div><div className="val" style={{color:'var(--purple)'}}>$ {fmt(investments)}</div></div>
           <div className="scard"><span className="icon">💰</span><div className="label">Balance</div><div className="val" style={{color:balance>=0?'var(--green)':'var(--red)'}}>$ {fmt(balance)}</div><div className="sub">{balance>=0?'Under budget ✓':'Over budget ⚠'}</div></div>
           <div className="scard"><span className="icon">📊</span><div className="label">Savings Rate</div><div className="val" style={{color:'var(--accent)'}}>{savingsRate}%</div></div>
         </div>
@@ -393,38 +371,6 @@ function App(){
             <span className="legend-income">Income</span>
             <span className="legend-expense">Expenses</span>
           </div>
-        </div>
-
-        {/* Savings goals */}
-        <div className="goals-sec">
-          <h3 style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-            🎯 Savings Goals
-            <button className="btn btn-g" style={{fontSize:12,padding:'5px 12px'}} onClick={()=>setGoalModal(true)}>+ Add Goal</button>
-          </h3>
-          {goals.length>0&&(
-            <div className="goals-grid" style={{marginTop:10}}>
-              {goals.map(g=>{
-                const pct=g.target>0?Math.min(100,Math.round(g.saved/g.target*100)):0;
-                return(
-                  <div className="goal-card" key={g.id}>
-                    <div className="gname">{g.icon||'🎯'} {g.name}</div>
-                    <div className="gprog">
-                      <div className="gbar"><div className="gfill" style={{width:`${pct}%`,background:pct>=100?'var(--green)':'var(--accent)'}}></div></div>
-                      <div className="ginfo"><span>${fmt(g.saved)} / ${fmt(g.target)}</span><span>{pct}%</span></div>
-                    </div>
-                    <div style={{display:'flex',gap:4,marginTop:6}}>
-                      <button className="btn btn-g" style={{fontSize:10,padding:'3px 8px',flex:1}} onClick={()=>updateGoalSaved(g.id,50)}>+ $50</button>
-                      <button className="btn btn-g" style={{fontSize:10,padding:'3px 8px',flex:1}} onClick={()=>updateGoalSaved(g.id,100)}>+ $100</button>
-                      <button className="btn btn-g" style={{fontSize:10,padding:'3px 8px',flex:1}} onClick={()=>updateGoalSaved(g.id,500)}>+ $500</button>
-                    </div>
-                    <div className="goal-acts">
-                      <button className="abtn del" onClick={()=>deleteGoal(g.id)}>✕</button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
         </div>
 
         {/* Category breakdown */}
@@ -456,6 +402,7 @@ function App(){
             <select value={cat} onChange={e=>setCat(e.target.value)}>
               <optgroup label="Income">{CATEGORIES.filter(c=>c.type==='income').map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}</optgroup>
               <optgroup label="Expense">{CATEGORIES.filter(c=>c.type==='expense').map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}</optgroup>
+              <optgroup label="Investments">{CATEGORIES.filter(c=>c.type==='investment').map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}</optgroup>
             </select>
             <input type="date" value={txDate} onChange={e=>setTxDate(e.target.value)} />
             <button type="submit" className="btn btn-p">+ Add</button>
@@ -468,15 +415,9 @@ function App(){
           )}
         </div>
 
-        <div className="io">
-          <button onClick={exportAll}>↓ Export</button>
-          <button onClick={importAll}>↑ Import</button>
-          <button onClick={pushGitHub} disabled={syncing}>☁ Backup</button>
-        </div>
       </div>
 
       {/* Goal modal */}
-      {goalModal&&<GoalModal onClose={()=>setGoalModal(false)} onSave={g=>{addGoal(g);setGoalModal(false);}} />}
       {syncModal&&<SyncModal config={syncConfig} sessionToken={sessionToken} dirty={dirty} syncing={syncing}
         onClose={()=>setSyncModal(false)} onConfig={saveSyncConfig} onLogin={loginApi} onLogout={logoutApi}
         onPull={pullGitHub} onPush={pushGitHub} status={syncStatus} />}
@@ -544,11 +485,12 @@ function TransactionsTable({rows,monthKey,onUpdate,onDelete}){
 
 function TransactionViewRow({row,onEdit,onDelete}){
   const category=CAT_MAP[row.category];
+  const investment=isInvestment(row);
   return <tr>
     <td style={{fontSize:12,color:'var(--text-dim)',whiteSpace:'nowrap'}}>{row.date}</td>
     <td>{row.desc}</td>
     <td><span className="tx-cat-badge" style={{background:(category?.color||'#666')+'20',color:category?.color||'var(--text-sec)'}}>{category?.icon} {category?.label||row.category}</span></td>
-    <td style={{textAlign:'right'}}><span className={`tx-type ${row.type}`}>{row.type==='income'?'+':'-'} ${fmt(Number(row.amount)||0)}</span></td>
+    <td style={{textAlign:'right'}}><span className={`tx-type ${investment?'investment':row.type}`}>{investment?'↗':row.type==='income'?'+':'-'} ${fmt(Number(row.amount)||0)}</span></td>
     <td><div className="tx-acts"><button className="abtn" onClick={()=>onEdit(row)}>Edit</button><button className="abtn del" onClick={()=>onDelete(row.id)}>✕</button></div></td>
   </tr>;
 }
@@ -562,34 +504,11 @@ function TransactionEditRow({draft,setDraft,onSave,onCancel}){
     <td><select className="edit-cell" value={draft.category||''} onChange={e=>setValue('category',e.target.value)}>
       <optgroup label="Income">{CATEGORIES.filter(c=>c.type==='income').map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}</optgroup>
       <optgroup label="Expense">{CATEGORIES.filter(c=>c.type==='expense').map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}</optgroup>
+      <optgroup label="Investments">{CATEGORIES.filter(c=>c.type==='investment').map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}</optgroup>
     </select></td>
     <td><input className="edit-cell" type="number" min="0" step="0.01" value={draft.amount??''} onChange={e=>setValue('amount',e.target.value)} /></td>
     <td><div className="row-edit-actions"><button className="abtn save" onClick={onSave}>Save</button><button className="abtn cancel" onClick={onCancel}>Cancel</button></div></td>
   </tr>;
-}
-
-function GoalModal({onClose,onSave}){
-  const [name,setName]=useState('');
-  const [target,setTarget]=useState('');
-  const [icon,setIcon]=useState('🎯');
-  return(
-    <div className="modal-ov" onClick={onClose}>
-      <div className="modal" onClick={e=>e.stopPropagation()}>
-        <h3>New Savings Goal</h3>
-        <div className="fg"><label>Goal Name</label><input value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Emergency Fund, Vacation" autoFocus /></div>
-        <div className="fg-row">
-          <div className="fg"><label>Target Amount ($)</label><input type="number" value={target} onChange={e=>setTarget(e.target.value)} placeholder="5000" min="0" /></div>
-          <div className="fg"><label>Icon</label><select value={icon} onChange={e=>setIcon(e.target.value)}>
-            {['🎯','🏠','✈️','🚗','💻','🎓','💍','🏖️','🎸','🐶'].map(i=><option key={i} value={i}>{i}</option>)}
-          </select></div>
-        </div>
-        <div className="macts">
-          <button className="btn btn-g" onClick={onClose}>Cancel</button>
-          <button className="btn btn-p" onClick={()=>{if(!name.trim()||!target)return;onSave({name:name.trim(),target:parseFloat(target),icon});}}>Add Goal</button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function SyncModal({config,sessionToken,dirty,syncing,onClose,onConfig,onLogin,onLogout,onPull,onPush,status}){
