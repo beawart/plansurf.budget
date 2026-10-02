@@ -68,6 +68,7 @@ button{cursor:pointer;font-family:inherit;}input,textarea,select{font-family:inh
 .chart-legend span::before{content:'';display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle;}
 .legend-income::before{background:var(--green)!important;}
 .legend-expense::before{background:var(--red)!important;}
+.legend-investment::before{background:var(--purple)!important;}
 
 /* Category breakdown */
 .cat-sec h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-dim);margin-bottom:14px;}
@@ -273,12 +274,13 @@ function App(){
       const txs=transactions[k2]||[];
       const inc=txs.filter(t=>t.type==='income'&&!isInvestment(t)).reduce((s,t)=>s+t.amount,0);
       const exp=txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
-      data.push({label:MONTHS[m].substr(0,3),income:inc,expense:exp});
+      const inv=txs.filter(isInvestment).reduce((s,t)=>s+Number(t.amount||0),0);
+      data.push({label:MONTHS[m].substr(0,3),income:inc,expense:exp,investment:inv});
     }
     return data;
   },[transactions,curMonth,curYear]);
-  const chartMax=Math.max(...chartData.flatMap(d=>[d.income,d.expense]),1);
-  const chartHasData=chartData.some(d=>d.income>0||d.expense>0);
+  const chartMax=Math.max(...chartData.flatMap(d=>[d.income,d.expense,d.investment]),1);
+  const chartHasData=chartData.some(d=>d.income>0||d.expense>0||d.investment>0);
   const chartTick=value=>`$${new Intl.NumberFormat(undefined,{notation:'compact',maximumFractionDigits:1}).format(value)}`;
 
   const prevMonth=()=>{if(curMonth===0){setCurMonth(11);setCurYear(curYear-1);}else setCurMonth(curMonth-1);};
@@ -374,9 +376,10 @@ function App(){
                 <div className="chart-plot">
                   <div className="chart-grid" aria-hidden="true"><span></span><span></span><span></span></div>
                   {chartData.map((d,i)=>(
-                    <div className="bar-group" key={i} aria-label={`${d.label}: income $${fmt(d.income)}, expenses $${fmt(d.expense)}`}>
+                    <div className="bar-group" key={i} aria-label={`${d.label}: income $${fmt(d.income)}, expenses $${fmt(d.expense)}, investments $${fmt(d.investment)}`}>
                       <div className="bar" style={{height:`${(d.income/chartMax)*100}%`,background:'var(--green)',minHeight:d.income?4:0}} title={`Income: $${fmt(d.income)}`}></div>
                       <div className="bar" style={{height:`${(d.expense/chartMax)*100}%`,background:'var(--red)',minHeight:d.expense?4:0}} title={`Expenses: $${fmt(d.expense)}`}></div>
+                      <div className="bar" style={{height:`${(d.investment/chartMax)*100}%`,background:'var(--purple)',minHeight:d.investment?4:0}} title={`Investments: $${fmt(d.investment)}`}></div>
                       <span className="bar-label">{d.label}</span>
                     </div>
                   ))}
@@ -385,9 +388,10 @@ function App(){
               <div className="chart-legend">
                 <span className="legend-income">Income</span>
                 <span className="legend-expense">Expenses</span>
+                <span className="legend-investment">Investments</span>
               </div>
             </>
-          ):<div className="chart-empty">No income or expenses recorded in the last six months.</div>}
+          ):<div className="chart-empty">No income, expenses, or investments recorded in the last six months.</div>}
         </div>
 
         {/* Category breakdown */}
