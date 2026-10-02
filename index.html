@@ -84,6 +84,7 @@ button{cursor:pointer;font-family:inherit;}input,textarea,select{font-family:inh
 
 /* Transactions */
 .tx-sec h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-dim);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
+.tx-sec h3 .btn{font-size:11px;padding:6px 10px;text-transform:none;white-space:nowrap;}
 .tx-table{width:100%;border-collapse:separate;border-spacing:0;}
 .tx-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);}
 .tx-table td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
@@ -127,6 +128,22 @@ tr:hover .tx-acts{opacity:1;}
 .fg input:focus{border-color:var(--accent);}
 .fg-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .macts{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}
+.statement-modal{width:1000px;max-width:96vw;}
+.statement-summary{font-size:12px;color:var(--text-sec);margin:-6px 0 12px;}
+.import-table-wrap{max-height:52vh;overflow:auto;border:1px solid var(--border);border-radius:var(--radius);}
+.import-table{width:100%;min-width:760px;border-collapse:separate;border-spacing:0;}
+.import-table th{position:sticky;top:0;z-index:2;background:var(--surface-alt);font-size:10px;text-transform:uppercase;color:var(--text-dim);text-align:left;padding:8px;border-bottom:1px solid var(--border);}
+.import-table td{font-size:12px;padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.import-table tr:last-child td{border-bottom:0;}
+.import-date{white-space:nowrap;color:var(--text-sec);}
+.import-description{min-width:210px;max-width:330px;overflow-wrap:anywhere;}
+.import-table select{width:145px;max-width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:11px;}
+.import-duplicate{background:var(--amber-bg);}
+.import-warning{display:block;font-size:10px;color:var(--amber);}
+.import-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;}
+.import-actions .macts{margin:0;}
+.import-error{font-size:12px;color:var(--red);background:var(--red-bg);padding:9px 12px;border-radius:var(--radius);margin:0 0 12px;}
+.import-actions button:disabled{opacity:.5;cursor:not-allowed;}
 
 .sync-note{font-size:12px;color:var(--text-sec);background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:14px;}
 .sync-note strong{color:var(--text);}
@@ -140,6 +157,7 @@ tr:hover .tx-acts{opacity:1;}
 <div id="app"></div>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/papaparse@5.5.3/papaparse.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script type="text/babel">
 const {useState,useEffect,useMemo,useRef}=React;
@@ -176,6 +194,23 @@ const CATEGORIES=[
 ];
 const CAT_MAP={};CATEGORIES.forEach(c=>CAT_MAP[c.id]=c);
 const isInvestment=tx=>tx.category==='investment'||tx.type==='investment';
+const parseStatementDate=value=>{
+  const parts=String(value||'').trim().split(/[/-]/);
+  if(parts.length!==3)return null;
+  const [day,month,year]=parts[0].length===4?[parts[2],parts[1],parts[0]]:parts;
+  if(!/^\d{4}$/.test(year)||!/^\d{1,2}$/.test(month)||!/^\d{1,2}$/.test(day))return null;
+  const parsed=new Date(Date.UTC(Number(year),Number(month)-1,Number(day)));
+  if(parsed.getUTCFullYear()!==Number(year)||parsed.getUTCMonth()!==Number(month)-1||parsed.getUTCDate()!==Number(day))return null;
+  return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+};
+const parseStatementAmount=value=>{
+  const text=String(value??'').trim();
+  if(!text)return null;
+  const negative=/^\(.*\)$/.test(text);
+  const amount=Number(text.replace(/[,$\s()]/g,''));
+  return Number.isFinite(amount)?(negative?-Math.abs(amount):amount):null;
+};
+const statementFingerprint=tx=>`${tx.date}|${tx.desc.trim().toLowerCase()}|${Number(tx.amount).toFixed(2)}`;
 const inferCategory=description=>{
   const text=description.toLowerCase();
   const rules=[
@@ -213,6 +248,9 @@ function App(){
   const [amt,setAmt]=useState('');
   const [cat,setCat]=useState('salary');
   const [txDate,setTxDate]=useState(now.toISOString().split('T')[0]);
+  const [statementPreview,setStatementPreview]=useState(null);
+  const [statementImportError,setStatementImportError]=useState('');
+  const statementFileInput=useRef(null);
 
   useEffect(()=>{save(S+'-tx',transactions);},[transactions]);
   useEffect(()=>{save(S+'-goals',goals);},[goals]);
@@ -247,6 +285,82 @@ function App(){
     });
   };
   const deleteTx=(id)=>{setTransactions(p=>({...p,[key]:(p[key]||[]).filter(t=>t.id!==id)}));};
+
+  const parseStatementFile=e=>{
+    const file=e.target.files?.[0];
+    e.target.value='';
+    if(!file)return;
+    setStatementImportError('');
+    if(!window.Papa){setStatementImportError('The CSV parser did not load. Check your internet connection and try again.');return;}
+    window.Papa.parse(file,{
+      header:false,
+      skipEmptyLines:'greedy',
+      complete:result=>{
+        const records=result.data;
+        const firstRow=records[0]||[];
+        const headers=firstRow.map(value=>String(value||'').replace(/^\uFEFF/,'').trim().toLowerCase());
+        const dateIndex=headers.indexOf('date');
+        const descriptionIndex=headers.indexOf('description');
+        const amountIndex=headers.indexOf('amount');
+        const hasHeaders=dateIndex>=0&&descriptionIndex>=0&&amountIndex>=0;
+        const isHeaderlessAnz=!hasHeaders&&parseStatementDate(firstRow[0])!==null&&parseStatementAmount(firstRow[1])!==null&&Boolean(String(firstRow[2]||'').trim());
+        if(!hasHeaders&&!isHeaderlessAnz){
+          setStatementImportError('This CSV format is not recognized. Expected Date, Description, and Amount columns, or an ANZ date/amount/description export.');
+          return;
+        }
+
+        const known=new Set(Object.values(transactions).flat().map(statementFingerprint));
+        let skippedRows=0;
+        const dataRows=hasHeaders?records.slice(1):records;
+        const dateColumn=hasHeaders?dateIndex:0;
+        const descriptionColumn=hasHeaders?descriptionIndex:2;
+        const amountColumn=hasHeaders?amountIndex:1;
+        const items=dataRows.flatMap(row=>{
+          const date=parseStatementDate(row[dateColumn]);
+          const desc=String(row[descriptionColumn]||'').trim();
+          const signedAmount=parseStatementAmount(row[amountColumn]);
+          if(!date||!desc||signedAmount===null||signedAmount===0){skippedRows++;return [];}
+          const suggested=inferCategory(desc);
+          const direction=hasHeaders?(signedAmount>0?'expense':'income'):(signedAmount>0?'income':'expense');
+          const category=suggested==='investment'||(suggested&&CAT_MAP[suggested]?.type===direction)
+            ?suggested
+            :direction==='income'?'other-income':'other-expense';
+          const item={date,desc,amount:Math.abs(signedAmount),category,duplicate:false,include:true};
+          const fingerprint=statementFingerprint(item);
+          item.duplicate=known.has(fingerprint);
+          item.include=!item.duplicate;
+          known.add(fingerprint);
+          return [item];
+        });
+        if(!items.length){setStatementImportError('No valid transactions were found in this CSV.');return;}
+        setStatementPreview({fileName:file.name,items,skippedRows,format:hasHeaders?'card':'ANZ'});
+      },
+      error:error=>setStatementImportError(`Could not read this CSV: ${error.message}`)
+    });
+  };
+
+  const addStatementTransactions=items=>{
+    const selected=items.filter(item=>item.include);
+    if(!selected.length)return;
+    const groups={};
+    selected.forEach(item=>{
+      const monthKey=item.date.slice(0,7);
+      const category=CAT_MAP[item.category]?item.category:'other-expense';
+      (groups[monthKey]||(groups[monthKey]=[])).push({
+        id:uid(),desc:item.desc,amount:item.amount,category,type:CAT_MAP[category].type,date:item.date
+      });
+    });
+    setTransactions(current=>{
+      const next={...current};
+      Object.entries(groups).forEach(([monthKey,rows])=>{next[monthKey]=[...(next[monthKey]||[]),...rows];});
+      return next;
+    });
+    const latestDate=selected.map(item=>item.date).sort().at(-1).split('-');
+    setCurYear(Number(latestDate[0]));
+    setCurMonth(Number(latestDate[1])-1);
+    setSyncStatus(`${selected.length} transactions imported`);
+    setStatementPreview(null);
+  };
 
   // Stats
   const income=monthTx.filter(t=>t.type==='income'&&!isInvestment(t)).reduce((s,t)=>s+Number(t.amount||0),0);
@@ -416,7 +530,11 @@ function App(){
 
         {/* Add transaction */}
         <div className="tx-sec">
-          <h3>💳 Transactions</h3>
+          <h3>💳 Transactions
+            <button type="button" className="btn btn-g" onClick={()=>{setStatementImportError('');statementFileInput.current?.click();}}>↑ Import statement</button>
+            <input ref={statementFileInput} type="file" accept=".csv,text/csv" style={{display:'none'}} onChange={parseStatementFile} />
+          </h3>
+          {statementImportError&&<div className="import-error" role="alert">{statementImportError}</div>}
           <form className="add-row" onSubmit={addTx}>
             <input type="text" value={desc} onChange={e=>{const value=e.target.value;setDesc(value);const suggested=inferCategory(value);if(suggested)setCat(suggested);}} placeholder="Description" />
             <input type="number" value={amt} onChange={e=>setAmt(e.target.value)} placeholder="Amount" step="0.01" min="0" />
@@ -438,12 +556,58 @@ function App(){
 
       </div>
 
+      {statementPreview&&<StatementImportModal preview={statementPreview} onClose={()=>setStatementPreview(null)} onImport={addStatementTransactions} />}
       {/* Goal modal */}
       {syncModal&&<SyncModal config={syncConfig} sessionToken={sessionToken} dirty={dirty} syncing={syncing}
         onClose={()=>setSyncModal(false)} onConfig={saveSyncConfig} onLogin={loginApi} onLogout={logoutApi}
         onPull={pullGitHub} onPush={pushGitHub} status={syncStatus} />}
     </div>
   );
+}
+
+function StatementImportModal({preview,onClose,onImport}){
+  const [items,setItems]=useState(preview.items);
+  const selectedCount=items.filter(item=>item.include).length;
+  const duplicateCount=items.filter(item=>item.duplicate).length;
+  const updateItem=(index,updates)=>setItems(current=>current.map((item,itemIndex)=>itemIndex===index?{...item,...updates}:item));
+  return <div className="modal-ov" onClick={onClose}>
+    <div className="modal statement-modal" role="dialog" aria-modal="true" aria-labelledby="statement-import-title" onClick={e=>e.stopPropagation()}>
+      <h3 id="statement-import-title">Review statement transactions</h3>
+      <div className="statement-summary">
+        {preview.fileName} · {items.length} parsed · {preview.skippedRows} skipped · {duplicateCount} possible duplicates · Positive amounts treated as {preview.format==='ANZ'?'deposits':'charges'}
+      </div>
+      <div className="import-table-wrap">
+        <table className="import-table">
+          <thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Category</th><th>Include</th></tr></thead>
+          <tbody>{items.map((item,index)=>{
+            const type=CAT_MAP[item.category]?.type||'expense';
+            const marker=type==='income'?'+':type==='investment'?'↗':'−';
+            return <tr key={`${item.date}-${index}`} className={item.duplicate?'import-duplicate':''}>
+              <td className="import-date">{item.date}</td>
+              <td className="import-description">
+                {item.desc}
+                {item.duplicate&&<span className="import-warning">Possible duplicate</span>}
+              </td>
+              <td style={{whiteSpace:'nowrap'}}><span className={`tx-type ${type}`}>{marker} $ {fmt(item.amount)}</span></td>
+              <td><select value={item.category} aria-label={`Category for ${item.desc}`} onChange={e=>updateItem(index,{category:e.target.value})}>
+                <optgroup label="Income">{CATEGORIES.filter(category=>category.type==='income').map(category=><option key={category.id} value={category.id}>{category.label}</option>)}</optgroup>
+                <optgroup label="Expenses">{CATEGORIES.filter(category=>category.type==='expense').map(category=><option key={category.id} value={category.id}>{category.label}</option>)}</optgroup>
+                <optgroup label="Investments">{CATEGORIES.filter(category=>category.type==='investment').map(category=><option key={category.id} value={category.id}>{category.label}</option>)}</optgroup>
+              </select></td>
+              <td><input type="checkbox" aria-label={`Include ${item.desc}`} checked={item.include} onChange={e=>updateItem(index,{include:e.target.checked})} /></td>
+            </tr>;
+          })}</tbody>
+        </table>
+      </div>
+      <div className="import-actions">
+        <span className="statement-summary">{selectedCount} of {items.length} selected</span>
+        <div className="macts">
+          <button type="button" className="btn btn-g" onClick={onClose}>Cancel</button>
+          <button type="button" className="btn btn-p" disabled={!selectedCount} onClick={()=>onImport(items)}>Add transactions</button>
+        </div>
+      </div>
+    </div>
+  </div>;
 }
 
 function TransactionsTable({rows,monthKey,onUpdate,onDelete}){
