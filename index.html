@@ -54,11 +54,16 @@ button{cursor:pointer;font-family:inherit;}input,textarea,select{font-family:inh
 .chart-sec{margin-bottom:16px;}
 .cat-sec,.tx-sec{margin-bottom:16px;}
 .chart-sec h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);margin-bottom:14px;}
-.bar-chart{display:flex;align-items:flex-end;gap:6px;height:140px;padding-bottom:20px;position:relative;border-bottom:1px solid var(--border);}
-.bar-group{flex:1;display:flex;gap:3px;align-items:flex-end;justify-content:center;position:relative;}
-.bar{border-radius:4px 4px 0 0;min-width:16px;max-width:32px;flex:1;transition:height .4s;cursor:default;}
+.bar-chart{display:grid;grid-template-columns:52px minmax(0,1fr);gap:8px;height:190px;position:relative;}
+.chart-scale{display:flex;flex-direction:column;justify-content:space-between;padding-bottom:24px;color:var(--text-dim);font-size:10px;text-align:right;white-space:nowrap;}
+.chart-plot{display:flex;align-items:stretch;gap:6px;position:relative;min-width:0;}
+.chart-grid{position:absolute;inset:0 0 24px;display:flex;flex-direction:column;justify-content:space-between;pointer-events:none;}
+.chart-grid span{width:100%;border-top:1px solid var(--border);}
+.bar-group{flex:1;display:flex;gap:3px;align-items:flex-end;justify-content:center;position:relative;z-index:1;min-width:0;padding-bottom:24px;}
+.bar{border-radius:4px 4px 0 0;min-width:8px;max-width:32px;flex:1;transition:height .4s;cursor:default;}
 .bar:hover{opacity:.8;}
-.bar-label{position:absolute;bottom:-18px;font-size:9px;color:var(--text-dim);text-align:center;width:100%;}
+.bar-label{position:absolute;bottom:0;font-size:10px;color:var(--text-dim);text-align:center;width:100%;}
+.chart-empty{padding:36px 12px;text-align:center;color:var(--text-sec);font-size:13px;}
 .chart-legend{display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--text-sec);}
 .chart-legend span::before{content:'';display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle;}
 .legend-income::before{background:var(--green)!important;}
@@ -273,6 +278,8 @@ function App(){
     return data;
   },[transactions,curMonth,curYear]);
   const chartMax=Math.max(...chartData.flatMap(d=>[d.income,d.expense]),1);
+  const chartHasData=chartData.some(d=>d.income>0||d.expense>0);
+  const chartTick=value=>`$${new Intl.NumberFormat(undefined,{notation:'compact',maximumFractionDigits:1}).format(value)}`;
 
   const prevMonth=()=>{if(curMonth===0){setCurMonth(11);setCurYear(curYear-1);}else setCurMonth(curMonth-1);};
   const nextMonth=()=>{if(curMonth===11){setCurMonth(0);setCurYear(curYear+1);}else setCurMonth(curMonth+1);};
@@ -358,19 +365,29 @@ function App(){
         {/* Bar chart */}
         <div className="chart-sec">
           <h3>6-Month Comparison</h3>
-          <div className="bar-chart">
-            {chartData.map((d,i)=>(
-              <div className="bar-group" key={i}>
-                <div className="bar" style={{height:`${(d.income/chartMax)*100}%`,background:'var(--green)',minHeight:d.income?4:0}} title={`Income: $${fmt(d.income)}`}></div>
-                <div className="bar" style={{height:`${(d.expense/chartMax)*100}%`,background:'var(--red)',minHeight:d.expense?4:0}} title={`Expenses: $${fmt(d.expense)}`}></div>
-                <span className="bar-label">{d.label}</span>
+          {chartHasData?(
+            <>
+              <div className="bar-chart">
+                <div className="chart-scale" aria-hidden="true">
+                  {[chartMax,chartMax/2,0].map((value,i)=><span key={i}>{chartTick(value)}</span>)}
+                </div>
+                <div className="chart-plot">
+                  <div className="chart-grid" aria-hidden="true"><span></span><span></span><span></span></div>
+                  {chartData.map((d,i)=>(
+                    <div className="bar-group" key={i} aria-label={`${d.label}: income $${fmt(d.income)}, expenses $${fmt(d.expense)}`}>
+                      <div className="bar" style={{height:`${(d.income/chartMax)*100}%`,background:'var(--green)',minHeight:d.income?4:0}} title={`Income: $${fmt(d.income)}`}></div>
+                      <div className="bar" style={{height:`${(d.expense/chartMax)*100}%`,background:'var(--red)',minHeight:d.expense?4:0}} title={`Expenses: $${fmt(d.expense)}`}></div>
+                      <span className="bar-label">{d.label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
-          <div className="chart-legend">
-            <span className="legend-income">Income</span>
-            <span className="legend-expense">Expenses</span>
-          </div>
+              <div className="chart-legend">
+                <span className="legend-income">Income</span>
+                <span className="legend-expense">Expenses</span>
+              </div>
+            </>
+          ):<div className="chart-empty">No income or expenses recorded in the last six months.</div>}
         </div>
 
         {/* Category breakdown */}
