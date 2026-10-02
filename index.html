@@ -104,6 +104,7 @@ button{cursor:pointer;font-family:inherit;}input,textarea,select{font-family:inh
 .tx-type.income{color:var(--green);}
 .tx-type.expense{color:var(--red);}
 .tx-type.investment{color:var(--purple);}
+.tx-type.transfer{color:var(--text-sec);}
 .tx-cat-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;}
 .tx-acts{display:flex;gap:2px;opacity:0;transition:.15s;}
 tr:hover .tx-acts{opacity:1;}
@@ -176,6 +177,7 @@ const CATEGORIES=[
   {id:'salary',label:'Salary',icon:'💰',color:'#16a34a',type:'income'},
   {id:'freelance',label:'Freelance',icon:'💻',color:'#2563eb',type:'income'},
   {id:'investment',label:'Investment',icon:'📈',color:'#9333ea',type:'investment'},
+  {id:'transfer',label:'Transfer',icon:'↔️',color:'#64748b',type:'transfer'},
   {id:'rental-income',label:'Rental Income',icon:'🏘️',color:'#0891b2',type:'income'},
   {id:'other-income',label:'Other Income',icon:'🎁',color:'#0891b2',type:'income'},
   {id:'rent',label:'Rent / Mortgage',icon:'🏠',color:'#dc2626',type:'expense'},
@@ -214,16 +216,18 @@ const statementFingerprint=tx=>`${tx.date}|${tx.desc.trim().toLowerCase()}|${Num
 const inferCategory=description=>{
   const text=description.toLowerCase();
   const rules=[
+    ['transfer',['funds tfer','funds transfer','bpay nab cards','anz mobile banking payment','payment to beawarwala taha','online payment received']],
     ['salary',['salary','payroll','paycheck','wages']],['freelance',['freelance','client work','contract work']],
-    ['investment',['investment','dividend','stock sale','interest','vanguard','spaceship']],['rental-income',['rental income','rent received','tenant payment','tenant rent','property rent']],
-    ['other-income',['bonus','gift','refund','cashback']],
-    ['rent',['rent','mortgage','landlord']],['groceries',['grocery','groceries','supermarket','food shop']],
-    ['transport',['uber','lyft','taxi','fuel','gas station','petrol','parking','train','bus']],
+    ['investment',['investment','dividend','stock sale','interest','vanguard','spaceship']],['rental-income',['rental income','rent received','tenant payment','tenant rent','property rent','ray white']],
+    ['other-income',['bonus','gift','refund','cashback','reversal']],
+    ['rent',['rent','mortgage','landlord']],['groceries',['grocery','groceries','supermarket','food shop','coles','woolworths','day to day supermarket']],
+    ['transport',['uber','lyft','taxi','fuel','gas station','petrol','parking','train','bus','7-eleven','seven eleven','reddy express']],
     ['utilities',['electric','electricity','water bill','utility','utilities','internet','phone bill','energy locals']],
-    ['entertainment',['movie','cinema','concert','game','entertainment']],['holiday',['flight','hotel','airbnb','vacation','holiday','travel']],
-    ['dining',['restaurant','dinner','lunch','breakfast','coffee','takeout','takeaway','dining']],['health',['doctor','dentist','pharmacy','medicine','health']],
-    ['shopping',['shopping','clothes','clothing','amazon','mall']],['education',['course','tuition','school','book','education']],
-    ['insurance',['insurance']],['subscriptions',['netflix','spotify','subscription','membership']],['other-expense',['expense']]
+    ['entertainment',['movie','cinema','concert','game','entertainment','trybooking']],['holiday',['flight','hotel','airbnb','vacation','holiday','travel','jetstar']],
+    ['dining',['restaurant','dinner','lunch','breakfast','coffee','takeout','takeaway','dining','sharetea','yo-chi','yo- chi','domino','teriyaki','cafe','smash burger']],['health',['doctor','dentist','pharmacy','medicine','health','chemist warehouse']],
+    ['shopping',['shopping','clothes','clothing','amazon','mall','rebel','kmart','smiggle','target','reject shop','temu','spotlight','payin4','bunnings']],['groceries',['natures green farm','green grocer','farmers market','produce market']],
+    ['education',['course','tuition','school','book','education']],
+    ['insurance',['insurance','insure','allianz','gmhba','budget direct']],['subscriptions',['netflix','spotify','subscription','membership']],['other-expense',['expense']]
   ];
   const match=rules.find(([,keywords])=>keywords.some(keyword=>text.includes(keyword)));
   return match?.[0]||null;
@@ -322,7 +326,7 @@ function App(){
           if(!date||!desc||signedAmount===null||signedAmount===0){skippedRows++;return [];}
           const suggested=inferCategory(desc);
           const direction=hasHeaders?(signedAmount>0?'expense':'income'):(signedAmount>0?'income':'expense');
-          const category=suggested==='investment'||(suggested&&CAT_MAP[suggested]?.type===direction)
+          const category=suggested==='investment'||suggested==='transfer'||(suggested&&CAT_MAP[suggested]?.type===direction)
             ?suggested
             :direction==='income'?'other-income':'other-expense';
           const item={date,desc,amount:Math.abs(signedAmount),category,duplicate:false,include:true};
@@ -542,6 +546,7 @@ function App(){
               <optgroup label="Income">{CATEGORIES.filter(c=>c.type==='income').map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}</optgroup>
               <optgroup label="Expense">{CATEGORIES.filter(c=>c.type==='expense').map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}</optgroup>
               <optgroup label="Investments">{CATEGORIES.filter(c=>c.type==='investment').map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}</optgroup>
+              <optgroup label="Transfers">{CATEGORIES.filter(c=>c.type==='transfer').map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}</optgroup>
             </select>
             <input type="date" value={txDate} onChange={e=>setTxDate(e.target.value)} />
             <button type="submit" className="btn btn-p">+ Add</button>
@@ -593,6 +598,7 @@ function StatementImportModal({preview,onClose,onImport}){
                 <optgroup label="Income">{CATEGORIES.filter(category=>category.type==='income').map(category=><option key={category.id} value={category.id}>{category.label}</option>)}</optgroup>
                 <optgroup label="Expenses">{CATEGORIES.filter(category=>category.type==='expense').map(category=><option key={category.id} value={category.id}>{category.label}</option>)}</optgroup>
                 <optgroup label="Investments">{CATEGORIES.filter(category=>category.type==='investment').map(category=><option key={category.id} value={category.id}>{category.label}</option>)}</optgroup>
+                <optgroup label="Transfers">{CATEGORIES.filter(category=>category.type==='transfer').map(category=><option key={category.id} value={category.id}>{category.label}</option>)}</optgroup>
               </select></td>
               <td><input type="checkbox" aria-label={`Include ${item.desc}`} checked={item.include} onChange={e=>updateItem(index,{include:e.target.checked})} /></td>
             </tr>;
@@ -671,11 +677,12 @@ function TransactionsTable({rows,monthKey,onUpdate,onDelete}){
 function TransactionViewRow({row,onEdit,onDelete}){
   const category=CAT_MAP[row.category];
   const investment=isInvestment(row);
+  const transfer=row.category==='transfer'||row.type==='transfer';
   return <tr>
     <td style={{fontSize:12,color:'var(--text-dim)',whiteSpace:'nowrap'}}>{row.date}</td>
     <td>{row.desc}</td>
     <td><span className="tx-cat-badge" style={{background:(category?.color||'#666')+'20',color:category?.color||'var(--text-sec)'}}>{category?.icon} {category?.label||row.category}</span></td>
-    <td style={{textAlign:'right'}}><span className={`tx-type ${investment?'investment':row.type}`}>{investment?'↗':row.type==='income'?'+':'-'} ${fmt(Number(row.amount)||0)}</span></td>
+    <td style={{textAlign:'right'}}><span className={`tx-type ${investment?'investment':transfer?'transfer':row.type}`}>{investment?'↗':transfer?'↔':row.type==='income'?'+':'-'} ${fmt(Number(row.amount)||0)}</span></td>
     <td><div className="tx-acts"><button className="abtn" onClick={()=>onEdit(row)}>Edit</button><button className="abtn del" onClick={()=>onDelete(row.id)}>✕</button></div></td>
   </tr>;
 }
@@ -690,6 +697,7 @@ function TransactionEditRow({draft,setDraft,onSave,onCancel}){
       <optgroup label="Income">{CATEGORIES.filter(c=>c.type==='income').map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}</optgroup>
       <optgroup label="Expense">{CATEGORIES.filter(c=>c.type==='expense').map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}</optgroup>
       <optgroup label="Investments">{CATEGORIES.filter(c=>c.type==='investment').map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}</optgroup>
+      <optgroup label="Transfers">{CATEGORIES.filter(c=>c.type==='transfer').map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}</optgroup>
     </select></td>
     <td><input className="edit-cell" type="number" min="0" step="0.01" value={draft.amount??''} onChange={e=>setValue('amount',e.target.value)} /></td>
     <td><div className="row-edit-actions"><button className="abtn save" onClick={onSave}>Save</button><button className="abtn cancel" onClick={onCancel}>Cancel</button></div></td>
