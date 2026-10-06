@@ -141,7 +141,7 @@ const S='budget-planner-v1';
 const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d;}catch{return d;}};
 const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const uid=()=>Math.random().toString(36).substr(2,9)+Date.now().toString(36);
-const API_BASE_URL=(window.__PLANSURF_API__ || 'https://plansurf-budget.onrender.com').replace(/\/$/, '');
+const API_BASE_URL=(window.__PLANSURF_API__ || 'https://plansurf-service.onrender.com').replace(/\/$/, '');
 const DEFAULT_SYNC_CONFIG={apiBaseUrl:API_BASE_URL};
 const getSyncConfig=()=>{const saved=load('budget-planner-api-v1',{});return{apiBaseUrl:saved.apiBaseUrl||API_BASE_URL};};
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
