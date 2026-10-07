@@ -166,9 +166,7 @@ const S='budget-planner-v1';
 const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d;}catch{return d;}};
 const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const uid=()=>Math.random().toString(36).substr(2,9)+Date.now().toString(36);
-const API_BASE_URL=(window.__PLANSURF_API__ || 'https://plansurf-service.onrender.com').replace(/\/$/, '');
-const DEFAULT_SYNC_CONFIG={apiBaseUrl:API_BASE_URL};
-const getSyncConfig=()=>{const saved=load('budget-planner-api-v1',{});return{apiBaseUrl:saved.apiBaseUrl||API_BASE_URL};};
+const API_BASE_URL='https://plansurf-service.onrender.com';
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const mk=(y,m)=>`${y}-${String(m+1).padStart(2,'0')}`;
 const fmt=n=>n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -241,7 +239,6 @@ function App(){
   const [curYear,setCurYear]=useState(now.getFullYear());
   const [dark,setDark]=useState(()=>localStorage.getItem('bp-dark')==='1');
   const [syncModal,setSyncModal]=useState(false);
-  const [syncConfig,setSyncConfig]=useState(getSyncConfig);
   const [sessionToken,setSessionToken]=useState('');
   const [syncStatus,setSyncStatus]=useState('Ready');
   const [dirty,setDirty]=useState(false);
@@ -405,10 +402,9 @@ function App(){
   const nextMonth=()=>{if(curMonth===11){setCurMonth(0);setCurYear(curYear+1);}else setCurMonth(curMonth+1);};
 
   const syncData={version:1,app:'plansurf-budget',transactions,goals,updatedAt:new Date().toISOString()};
-  const apiUrl=(config,path)=>`${(config.apiBaseUrl||API_BASE_URL).replace(/\/$/,'')}${path}`;
-  const saveSyncConfig=config=>{setSyncConfig(config);save('budget-planner-api-v1',config);};
-  const apiRequest=async(config,path,options={})=>{
-    const response=await fetch(apiUrl(config,path),{
+  const apiUrl=path=>`${API_BASE_URL}${path}`;
+  const apiRequest=async(path,options={})=>{
+    const response=await fetch(apiUrl(path),{
       ...options,
       headers:{'Content-Type':'application/json',...(sessionToken?{Authorization:`Bearer ${sessionToken}`}:{}) ,...(options.headers||{})},
       cache:'no-store'
@@ -417,39 +413,38 @@ function App(){
     if(!response.ok)throw new Error(payload.error||`API request failed (${response.status}).`);
     return payload;
   };
-  const loginApi=async(config,password)=>{
+  const loginApi=async password=>{
     setSyncing(true);setSyncStatus('Signing in...');
     try{
-      saveSyncConfig(config);
-      const payload=await apiRequest(config,'/api/login',{method:'POST',body:JSON.stringify({password}),headers:{}});
+      const payload=await apiRequest('/api/budget/login',{method:'POST',body:JSON.stringify({password}),headers:{}});
       setSessionToken(payload.token);setSyncStatus('Signed in');
       return true;
     }catch(error){setSyncStatus('Sign in failed: '+error.message);return false;}
     finally{setSyncing(false);}
   };
-  const logoutApi=async(config=syncConfig)=>{
-    try{if(sessionToken)await apiRequest(config,'/api/logout',{method:'POST'});}catch{}
+  const logoutApi=async()=>{
+    try{if(sessionToken)await apiRequest('/api/budget/logout',{method:'POST'});}catch{}
     setSessionToken('');setSyncStatus('Signed out');
   };
   const applySyncData=d=>{
-    if(!d||d.app!=='plansurf-budget'||typeof d.transactions!=='object'||!Array.isArray(d.goals))throw new Error('The JSON file is not a valid PlanSurf budget backup.');
+    if(!d||(d.app!==undefined&&d.app!=='plansurf-budget')||!d.transactions||typeof d.transactions!=='object'||Array.isArray(d.transactions)||!Array.isArray(d.goals))throw new Error('The JSON file is not a valid PlanSurf budget backup.');
     suppressDirty.current=true;setTransactions(d.transactions);setGoals(d.goals);
   };
-  const pullGitHub=async(config=syncConfig)=>{
+  const pullGitHub=async()=>{
     if(!sessionToken){setSyncStatus('Sign in before syncing budget data');return;}
     if(dirty&&!window.confirm('Pulling will replace unsaved local changes. Continue?'))return;
     setSyncing(true);setSyncStatus('Loading budget...');
     try{
-      applySyncData(await apiRequest(config,'/api/budget'));
+      applySyncData(await apiRequest('/api/budget/data'));
       setDirty(false);setSyncStatus('Budget synced');
     }catch(error){setSyncStatus('Pull failed: '+error.message);}
     finally{setSyncing(false);}
   };
-  const pushGitHub=async(config=syncConfig)=>{
+  const pushGitHub=async()=>{
     if(!sessionToken){setSyncStatus('Sign in before syncing budget data');return;}
     setSyncing(true);setSyncStatus('Saving budget...');
     try{
-      await apiRequest(config,'/api/budget',{method:'PUT',body:JSON.stringify(syncData)});
+      await apiRequest('/api/budget/data',{method:'PUT',body:JSON.stringify(syncData)});
       setDirty(false);setSyncStatus('Budget saved');
     }catch(error){setSyncStatus('Backup failed: '+error.message);}
     finally{setSyncing(false);}
@@ -563,8 +558,8 @@ function App(){
 
       {statementPreview&&<StatementImportModal preview={statementPreview} onClose={()=>setStatementPreview(null)} onImport={addStatementTransactions} />}
       {/* Goal modal */}
-      {syncModal&&<SyncModal config={syncConfig} sessionToken={sessionToken} dirty={dirty} syncing={syncing}
-        onClose={()=>setSyncModal(false)} onConfig={saveSyncConfig} onLogin={loginApi} onLogout={logoutApi}
+      {syncModal&&<SyncModal sessionToken={sessionToken} dirty={dirty} syncing={syncing}
+        onClose={()=>setSyncModal(false)} onLogin={loginApi} onLogout={logoutApi}
         onPull={pullGitHub} onPush={pushGitHub} status={syncStatus} />}
     </div>
   );
@@ -704,14 +699,13 @@ function TransactionEditRow({draft,setDraft,onSave,onCancel}){
   </tr>;
 }
 
-function SyncModal({config,sessionToken,dirty,syncing,onClose,onConfig,onLogin,onLogout,onPull,onPush,status}){
+function SyncModal({sessionToken,dirty,syncing,onClose,onLogin,onLogout,onPull,onPush,status}){
   const [password,setPassword]=useState('');
-  const saveSettings=()=>config;
   return <div className="modal-ov" onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
     <h3>Budget Sync</h3>
-    {!sessionToken&&<div className="fg"><label>Password</label><input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="current-password" onKeyDown={async e=>{if(e.key==='Enter'&&!syncing&&await onLogin(saveSettings(),password))setPassword('');}} />{status&&<div className="hint">{status}</div>}</div>}
+    {!sessionToken&&<div className="fg"><label>Password</label><input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="current-password" onKeyDown={async e=>{if(e.key==='Enter'&&!syncing&&await onLogin(password))setPassword('');}} />{status&&<div className="hint">{status}</div>}</div>}
     <div className="sync-note">Status: {status}{dirty?' · local changes need backup':''}</div>
-    <div className="sync-actions"><button className="btn btn-g" onClick={onClose}>Close</button>{sessionToken?<><button className="btn btn-g" disabled={syncing} onClick={()=>{const settings=saveSettings();onConfig(settings);onPull(settings);}}>↓ Pull latest</button><button className="btn btn-p" disabled={syncing} onClick={()=>{const settings=saveSettings();onConfig(settings);onPush(settings);}}>↑ Save local data</button><button className="btn btn-g" disabled={syncing} onClick={()=>onLogout(saveSettings())}>Sign out</button></>:<button className="btn btn-p" disabled={syncing||!password.trim()} onClick={async()=>{if(await onLogin(saveSettings(),password))setPassword('');}}>{syncing?'Signing in...':'Sign in'}</button>}</div>
+    <div className="sync-actions"><button className="btn btn-g" onClick={onClose}>Close</button>{sessionToken?<><button className="btn btn-g" disabled={syncing} onClick={onPull}>↓ Pull latest</button><button className="btn btn-p" disabled={syncing} onClick={onPush}>↑ Save local data</button><button className="btn btn-g" disabled={syncing} onClick={onLogout}>Sign out</button></>:<button className="btn btn-p" disabled={syncing||!password.trim()} onClick={async()=>{if(await onLogin(password))setPassword('');}}>{syncing?'Signing in...':'Sign in'}</button>}</div>
   </div></div>;
 }
 
